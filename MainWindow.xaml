@@ -1,0 +1,26 @@
+﻿<Window x:Class="GTAIVSetupUtilityWPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GTAIVSetupUtilityWPF"
+        mc:Ignorable="d"
+        Title="Gillian's GTA IV Setup Utility" MinHeight="512" MinWidth="670" Height="512" Width="670" WindowStartupLocation="CenterScreen" Icon="/image (16).png">
+    <Grid>
+        <TextBlock Margin="5,5" x:Name="VersionTextBlock" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <TextBlock Margin="5,20" x:Name="DebugOutput" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <TextBlock Margin="5,35" x:Name="DebugOutput2" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <TextBlock Margin="5,50" x:Name="DebugOutput3" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <TextBlock Margin="5,65" x:Name="DebugOutput4" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <TextBlock Margin="5,80" x:Name="DebugOutput5" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <TextBlock Margin="5,95" x:Name="DebugOutput6" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+
+        <TextBlock Margin="5" FontSize="32" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
+        <CheckBox Content="async" x:Name="asynccheckbox" HorizontalAlignment="Left" Margin="35,98,0,-38" IsChecked="True" Click="async_Click"/>
+        <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="10,118,0,0" VerticalAlignment="Top" Width="100" Height="25" Click="installdxvkbtn_Click"/>
+        <TextBox HorizontalAlignment="Left" x:Name="gamedirectory" Margin="5,70,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="580" IsEnabled="False"/>
+        <TextBlock HorizontalAlignment="Left" Margin="5,50,0,0" TextWrapping="Wrap" Text="Game Directory:" VerticalAlignment="Top"/>
+        <Button Content="Open..." HorizontalAlignment="Left" Margin="590,69,0,0" VerticalAlignment="Top" Width="60" Click="Button_Click"/>
+
+    </Grid>
+</Window>
