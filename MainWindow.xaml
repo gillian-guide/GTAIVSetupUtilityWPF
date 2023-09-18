@@ -5,22 +5,50 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GTAIVSetupUtilityWPF"
         mc:Ignorable="d"
-        Title="Gillian's GTA IV Setup Utility" MinHeight="512" MinWidth="670" Height="512" Width="670" WindowStartupLocation="CenterScreen" Icon="/image (16).png">
+    Title="Gillian's GTA IV Setup Utility" MinHeight="245" MaxHeight="245" MaxWidth="551" MinWidth="551" Height="245" Width="551" WindowStartupLocation="CenterScreen" Icon="/image (16).png">
     <Grid>
-        <TextBlock Margin="5,5" x:Name="VersionTextBlock" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="5,20" x:Name="DebugOutput" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="5,35" x:Name="DebugOutput2" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="5,50" x:Name="DebugOutput3" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="5,65" x:Name="DebugOutput4" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="5,80" x:Name="DebugOutput5" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-        <TextBlock Margin="5,95" x:Name="DebugOutput6" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
-
-        <TextBlock Margin="5" FontSize="32" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
-        <CheckBox Content="async" x:Name="asynccheckbox" HorizontalAlignment="Left" Margin="35,98,0,-38" IsChecked="True" Click="async_Click"/>
-        <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="10,118,0,0" VerticalAlignment="Top" Width="100" Height="25" Click="installdxvkbtn_Click"/>
-        <TextBox HorizontalAlignment="Left" x:Name="gamedirectory" Margin="5,70,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="580" IsEnabled="False"/>
-        <TextBlock HorizontalAlignment="Left" Margin="5,50,0,0" TextWrapping="Wrap" Text="Game Directory:" VerticalAlignment="Top"/>
-        <Button Content="Open..." HorizontalAlignment="Left" Margin="590,69,0,0" VerticalAlignment="Top" Width="60" Click="Button_Click"/>
-
+        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Visibility="Collapsed">
+            <TextBlock x:Name="VersionTextBlock" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput2" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput3" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput4" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput5" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput6" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="DebugOutput7" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        </StackPanel>
+        <StackPanel Margin="5,5,5,5">
+            <TextBlock Margin="0,5,0,0" FontSize="28" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
+            <TextBlock HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="Wrap" Text="Game Directory:" VerticalAlignment="Top"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBox HorizontalAlignment="Left" x:Name="gamedirectory" Margin="0,2,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="460" IsEnabled="False"/>
+                <Button Content="Open..." HorizontalAlignment="Left" Margin="5,0,0,0" VerticalAlignment="Top" Width="60" Click="Button_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <StackPanel x:Name="dxvkPanel" IsEnabled="False">
+                    <CheckBox Content="Install the async patch" x:Name="asynccheckbox" Margin="0,0,0,0" HorizontalAlignment="Left" IsChecked="True" Click="async_Click"/>
+                    <CheckBox Content="Enable VSync" x:Name="vsynccheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="vsync_Click"/>
+                    <CheckBox Content="Set Max Frame Latency" x:Name="framelatencycheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="latency_Click"/>
+                    <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click"/>
+                </StackPanel>
+                <StackPanel x:Name="launchoptionsPanel" IsEnabled="False" Margin="5,0,0,0">
+                    <CheckBox Content="-norestrictions" x:Name="norestrictionscheck" HorizontalAlignment="Left" Margin="0,0,0,0" IsChecked="True" Click="norestrictions_Click"/>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Content="-nomemrestrict" x:Name="nomemrestrictcheck" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="managed_Click"/>
+                        <RadioButton Content="-managed" x:Name="managedcheck" HorizontalAlignment="Left" Margin="5,5,0,0" Click="managed_Click"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Content="Borderless Windowed" x:Name="windowedcheck" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="False" Click="windowed_Click"/>
+                        <CheckBox Content="-availablevidmem" x:Name="vidmemcheck" HorizontalAlignment="Left" Margin="5,5,0,0" IsChecked="False" Click="vidmem_Click"/>
+                        <CheckBox Content="Monitor Details" x:Name="monitordetailcheck" HorizontalAlignment="Left" Margin="5,5,0,0" IsChecked="False" Click="monitordetail_Click"/>
+                    </StackPanel>
+                    <Button Content="Setup launch options" x:Name="launchoptionsbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="360" Height="25" Click="setuplaunchoptions_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" VerticalAlignment="Bottom"><Hyperlink NavigateUri="https://gillian-guide.github.io/" RequestNavigate="Hyperlink_RequestNavigate">Visit my Guide for more info and optimal graphics settings</Hyperlink></TextBlock>
+                <TextBlock HorizontalAlignment="Right" Margin="90,0,0,0" TextWrapping="Wrap" VerticalAlignment="Bottom"><Hyperlink NavigateUri="https://github.com/SandeMC/GTAIVSetupUtilityWPF" RequestNavigate="Hyperlink_RequestNavigate">This tool is open source</Hyperlink></TextBlock>
+            </StackPanel>
+            </StackPanel>
     </Grid>
 </Window>

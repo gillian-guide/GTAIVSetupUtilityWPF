@@ -16,13 +16,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Net.Http;
+
 
 namespace GTAIVSetupUtilityWPF
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    ///
     public partial class MainWindow : Window
     {
         public (int,int,bool,bool,bool,bool) resultvk = VulkanChecker.VulkanCheck();
@@ -42,18 +40,42 @@ namespace GTAIVSetupUtilityWPF
             DebugOutput3.Text = $"dGPU Only: {resultvk.Item4}";
             DebugOutput2.Text = $"Intel iGPU: {resultvk.Item5}";
             DebugOutput.Text = $"NVIDIA GPU: {resultvk.Item6}";
-            if (resultvk.Item6 && resultvk.Item1 == 2) {
+            if (resultvk.Item6 && resultvk.Item1 == 2)
+            {
                 asynccheckbox.IsChecked = false;
             };
-            if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
-            {
-                asynccheckbox.IsEnabled = false;
-                installdxvkbtn.IsEnabled = false;
-            }
         }
         private void async_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("DXVK with async should provide better performance for most, but under some conditions it may provide worse performance instead. Without async, you might stutter the first time you see different areas. It won't stutter the next time in the same area.\n\nNote, however, that performance on NVIDIA when using DXVK 2.0+ may be worse. Feel free to experiment by re-installing DXVK.");
+        }
+        private void vsync_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("The in-game VSync implementation produces framepacing issues. DXVK's VSync implementation should be preferred.\n\nIt's recommended to keep this on and in-game's implementation off.");
+        }
+        private void latency_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+        }
+        private void norestrictions_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+        }
+        private void managed_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+        }
+        private void windowed_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+        }
+        private void vidmem_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+        }
+        private void monitordetail_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -67,6 +89,15 @@ namespace GTAIVSetupUtilityWPF
                     if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
                     {
                         gamedirectory.Text = dialog.FileName;
+                        launchoptionsPanel.IsEnabled = true;
+                        if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
+                        {
+                            dxvkPanel.IsEnabled = false;
+                        }
+                        else
+                        {
+                            dxvkPanel.IsEnabled = true;
+                        }
                         break;
                     }
                     else
@@ -82,28 +113,24 @@ namespace GTAIVSetupUtilityWPF
             }
         }
 
-        private void installdxvkbtn_Click(object sender, RoutedEventArgs e)
+        private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
         {
             int installdxvk = 0;
             int dgpu_dxvk_support = resultvk.Item1;
             int igpu_dxvk_support = resultvk.Item2;
             bool igpuonly = resultvk.Item3;
             bool dgpuonly = resultvk.Item4;
+            bool inteligpu = resultvk.Item5;
 
             if (igpuonly && !dgpuonly)
             {
                 // User's PC only has an iGPU.
                 switch (igpu_dxvk_support)
                 {
-                    case 0:
-                        MessageBox.Show("Your PC only has an iGPU and it does not support DXVK.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        break;
                     case 1:
-                        MessageBox.Show("Your PC only has an iGPU but it supports Legacy DXVK. Installing...", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                         installdxvk = 1;
                         break;
                     case 2:
-                        MessageBox.Show("Your PC only has an iGPU but it supports Latest DXVK. Installing...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                         installdxvk = 2;
                         break;
                 }
@@ -113,15 +140,10 @@ namespace GTAIVSetupUtilityWPF
                 // User's PC only has a GPU.
                 switch (dgpu_dxvk_support)
                 {
-                    case 0:
-                        MessageBox.Show("Your GPU does not support DXVK.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        break;
                     case 1:
-                        MessageBox.Show("Your GPU only supports Legacy DXVK. Installing...", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                         installdxvk = 1;
                         break;
                     case 2:
-                        MessageBox.Show("Your GPU supports Latest DXVK. Installing...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                         installdxvk = 2;
                         break;
                 }
@@ -131,37 +153,30 @@ namespace GTAIVSetupUtilityWPF
                 // User's PC has both a GPU and an iGPU. Doing further checks...
                 switch ((dgpu_dxvk_support, igpu_dxvk_support))
                 {
-                    case (0, 0):
-                        MessageBox.Show("None of the your GPUs support DXVK.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        break;
                     case (0, 1):
                     case (0, 2):
-                        var result = MessageBox.Show("Your iGPU supports DXVK but your GPU doesn't - do you still wish to install?", "Install DXVK", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        var result = MessageBox.Show("Your iGPU supports DXVK but your GPU doesn't - do you still wish to install?", "Install DXVK?", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (result == MessageBoxResult.Yes)
                         {
                             switch (igpu_dxvk_support)
                             {
                                 case 1:
-                                    MessageBox.Show("You chose to install the version matching your iGPU - Legacy. Installing...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                     installdxvk = 1;
                                     break;
                                 case 2:
-                                    MessageBox.Show("You chose to install the version matching their iGPU - Latest. Installing...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                     installdxvk = 2;
                                     break;
                             }
                         }
                         break;
                     case (1, 2):
-                        var resultVer = MessageBox.Show("Your iGPU supports a greater version of DXVK than your GPU - which version do you wish to install? Press 'Version 1' to install the version matching your GPU or 'Version 2' to install the version matching your iGPU instead.", "Install DXVK Version", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        var resultVer = MessageBox.Show("Your iGPU supports a greater version of DXVK than your GPU - which version do you wish to install?\n\nPress 'Yes' to install the version matching your GPU.\n\nPress 'No' to install the version matching your iGPU instead.", "Which DXVK version to install?", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (resultVer == MessageBoxResult.Yes)
                         {
-                            MessageBox.Show("User chose to install the version matching their GPU - Legacy. Installing...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                             installdxvk = 1;
                         }
                         else
                         {
-                            MessageBox.Show("User chose to install the version matching their iGPU - Latest. Installing...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                             installdxvk = 2;
                         }
                         break;
@@ -173,18 +188,127 @@ namespace GTAIVSetupUtilityWPF
                         switch (dgpu_dxvk_support)
                         {
                             case 1:
-                                MessageBox.Show("Installing Legacy version...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                 installdxvk = 1;
                                 break;
                             case 2:
-                                MessageBox.Show("Installing Latest version...", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                                 installdxvk = 2;
                                 break;
                         }
                         break;
                 }
             }
-            DebugOutput.Text = installdxvk.ToString();
+
+            if (inteligpu && igpuonly)
+            {
+                MessageBoxResult result = MessageBox.Show("Your PC only has an Intel iGPU on it. While it does support more modern versions on paper, it's reported that DXVK 1.10.1 might be your only supported version. Do you wish to install it?\n\nIf 'No' is selected, DXVK will be installed following the normal procedure.", "Message", MessageBoxButton.YesNo);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    installdxvk = 3;
+                }
+            }
+
+            DebugOutput7.Text = $"DXVK: {installdxvk.ToString()}";
+
+            List<string> dxvkconf = new List<string> { };
+
+            if (vsynccheckbox.IsChecked == true)
+            {
+                dxvkconf.Add("d3d9.presentInterval = 1");
+                dxvkconf.Add("d3d9.numBackBuffers = 3");
+            }
+            if (framelatencycheckbox.IsChecked == true)
+            {
+                dxvkconf.Add("d3d9.maxFrameLatency = 1");
+            }
+
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Other");
+
+            switch (installdxvk)
+            {
+                case 1:
+                    /// we're using the "if" in each case because of the async checkbox
+                    if (asynccheckbox.IsChecked == true)
+                    {
+                        dxvkconf.Add("dxvk.enableAsync = true");
+                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231");
+                        firstResponse.EnsureSuccessStatusCode();
+                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
+                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        MessageBox.Show($"DXVK-async 1.10.3 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736");
+                        firstResponse.EnsureSuccessStatusCode();
+                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
+                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        MessageBox.Show($"DXVK 1.10.3 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    break;
+                case 2:
+                    if (asynccheckbox.IsChecked == true)
+                    {
+                        dxvkconf.Add("dxvk.enableAsync = true");
+                        dxvkconf.Add("dxvk.gplAsyncCache = true");
+                        var firstResponse = await httpClient.GetAsync("https://gitlab.com/api/v4/projects/43488626/releases/");
+                        firstResponse.EnsureSuccessStatusCode();
+                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
+                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        MessageBox.Show($"Latest DXVK-gplasync has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/doitsujin/dxvk/releases/latest");
+                        firstResponse.EnsureSuccessStatusCode();
+                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
+                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        MessageBox.Show($"Latest DXVK has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    break;
+                case 3:
+                    if (asynccheckbox.IsChecked == true)
+                    {
+                        dxvkconf.Add("dxvk.enableAsync = true");
+                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/60677007");
+                        firstResponse.EnsureSuccessStatusCode();
+                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
+                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        MessageBox.Show($"DXVK-async 1.10.1 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/doitsujin/dxvk/releases/assets/60669426");
+                        firstResponse.EnsureSuccessStatusCode();
+                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
+                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        MessageBox.Show($"DXVK 1.10.1 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    break;
+            }
+
+        }
+        private void setuplaunchoptions_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+        }
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+            }
+            catch
+            {
+                System.Diagnostics.Process.Start("cmd",$"/c start {e.Uri.AbsoluteUri}");
+            }
         }
     }
 }
