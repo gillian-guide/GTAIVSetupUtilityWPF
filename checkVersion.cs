@@ -21,7 +21,7 @@ public class checkVersion
         catch (Exception ex)
         {
             // Handle any exceptions here if needed
-            Console.WriteLine("Error: " + ex.Message);
+            Debug.WriteLine("Error: " + ex.Message);
             return "0.0.0.0";
         }
     }

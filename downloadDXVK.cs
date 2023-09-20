@@ -6,6 +6,7 @@ using ICSharpCode.SharpZipLib.Tar;
 using ICSharpCode.SharpZipLib.GZip;
 using System.Diagnostics;
 
+// hi here, i'm an awful coder, so please clean up for me if it really bothers you
 public class DXVKInstaller
 {
     public static void InstallDXVK(string downloadUrl, string installationDir, List<string> dxvkConf)
@@ -50,7 +51,7 @@ public class DXVKInstaller
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error installing DXVK: {ex.Message}");
+            Debug.WriteLine($"Error installing DXVK: {ex.Message}");
         }
     }
 }

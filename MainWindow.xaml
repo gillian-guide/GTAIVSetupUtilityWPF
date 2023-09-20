@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GTAIVSetupUtilityWPF"
         mc:Ignorable="d"
-    Title="Gillian's GTA IV Setup Utility" MinHeight="245" MaxHeight="245" MaxWidth="551" MinWidth="551" Height="245" Width="551" WindowStartupLocation="CenterScreen" Icon="/image (16).png">
+    Title="Gillian's GTA IV Setup Utility" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterScreen" Icon="ivlogo.png" ResizeMode="NoResize">
     <Grid>
         <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Visibility="Collapsed">
             <TextBlock x:Name="VersionTextBlock" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
@@ -19,11 +19,12 @@
         </StackPanel>
         <StackPanel Margin="5,5,5,5">
             <TextBlock Margin="0,5,0,0" FontSize="28" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
-            <TextBlock HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="Wrap" Text="Game Directory:" VerticalAlignment="Top"/>
+            <TextBlock x:Name="directorytxt" HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="Wrap" Text="Set your game directory before using:" VerticalAlignment="Top"/>
             <StackPanel Orientation="Horizontal">
-                <TextBox HorizontalAlignment="Left" x:Name="gamedirectory" Margin="0,2,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="460" IsEnabled="False"/>
+                <TextBox HorizontalAlignment="Left" x:Name="gamedirectory" Margin="0,2,0,0" VerticalAlignment="Top" Width="460" IsEnabled="False"/>
                 <Button Content="Open..." HorizontalAlignment="Left" Margin="5,0,0,0" VerticalAlignment="Top" Width="60" Click="Button_Click"/>
             </StackPanel>
+            <TextBlock Margin="0,5,0,0" FontSize="12" TextWrapping="Wrap" HorizontalAlignment="Center">Keep the options at default values unless you know what you're doing.</TextBlock>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                 <StackPanel x:Name="dxvkPanel" IsEnabled="False">
                     <CheckBox Content="Install the async patch" x:Name="asynccheckbox" Margin="0,0,0,0" HorizontalAlignment="Left" IsChecked="True" Click="async_Click"/>
@@ -38,7 +39,7 @@
                         <RadioButton Content="-managed" x:Name="managedcheck" HorizontalAlignment="Left" Margin="5,5,0,0" Click="managed_Click"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <CheckBox Content="Borderless Windowed" x:Name="windowedcheck" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="False" Click="windowed_Click"/>
+                        <CheckBox Content="Borderless Windowed" x:Name="windowedcheck" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="windowed_Click"/>
                         <CheckBox Content="-availablevidmem" x:Name="vidmemcheck" HorizontalAlignment="Left" Margin="5,5,0,0" IsChecked="False" Click="vidmem_Click"/>
                         <CheckBox Content="Monitor Details" x:Name="monitordetailcheck" HorizontalAlignment="Left" Margin="5,5,0,0" IsChecked="False" Click="monitordetail_Click"/>
                     </StackPanel>

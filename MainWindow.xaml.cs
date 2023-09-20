@@ -1,23 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Net.Http;
 
+// hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
 {
@@ -59,23 +49,23 @@ namespace GTAIVSetupUtilityWPF
         }
         private void norestrictions_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            MessageBox.Show("This option allows you to set any in-game settings independently of what the game restricts you to. It's recommended to keep this on. ");
         }
         private void managed_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            MessageBox.Show("-managed may improve performance when using DXVK, but it's not compatible with -nomemrestrict. It's recommended to choose -nomemrestrict that allows the game to use all the memory resources up to it's limits.");
         }
         private void windowed_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            MessageBox.Show("This option allows to use Borderless Fullscreen instead of Exclusive Fullscreen. Provides better experience and sometimes better performance. It's recommended to keep this on.");
         }
         private void vidmem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
         }
         private void monitordetail_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            MessageBox.Show("This option forces a specific resolution and refresh rate due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -88,6 +78,7 @@ namespace GTAIVSetupUtilityWPF
                 {
                     if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
                     {
+                        directorytxt.Text = "Game Directory:";
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
@@ -96,6 +87,14 @@ namespace GTAIVSetupUtilityWPF
                         }
                         else
                         {
+                            if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
+                            {
+                                installdxvkbtn.Content = "Reinstall DXVK";
+                            }
+                            if (!(File.Exists($"{dialog.FileName}\\ZolikaPatch.asi")) && (!(File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi")) && !(File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi"))) && !(File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi")))
+                            {
+                                windowedcheck.IsEnabled = false;
+                            }
                             dxvkPanel.IsEnabled = true;
                         }
                         break;
@@ -115,6 +114,8 @@ namespace GTAIVSetupUtilityWPF
 
         private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
         {
+            dxvkPanel.IsEnabled = false;
+            installdxvkbtn.Content = "Installing...";
             int installdxvk = 0;
             int dgpu_dxvk_support = resultvk.Item1;
             int igpu_dxvk_support = resultvk.Item2;
@@ -293,11 +294,13 @@ namespace GTAIVSetupUtilityWPF
                     }
                     break;
             }
+            installdxvkbtn.Content = "Reinstall DXVK";
+            dxvkPanel.IsEnabled = true;
 
         }
         private void setuplaunchoptions_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            MessageBox.Show("Placeholder");
         }
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {

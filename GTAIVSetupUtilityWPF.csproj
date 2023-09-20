@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<None Remove="image %2816%29.png" />
+	<None Remove="ivlogo.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Resource Include="image (16).png" />
+	<Resource Include="ivlogo.png" />
   </ItemGroup>
 
 </Project>
