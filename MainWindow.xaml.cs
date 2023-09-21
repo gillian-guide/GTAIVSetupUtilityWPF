@@ -278,7 +278,7 @@ namespace GTAIVSetupUtilityWPF
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
                         DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
-                        MessageBox.Show($"DXVK-async 1.10.3 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"DXVK-async 1.10.3 has been installed!");
                     }
                     else
                     {
@@ -287,7 +287,7 @@ namespace GTAIVSetupUtilityWPF
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
                         DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
-                        MessageBox.Show($"DXVK 1.10.3 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"DXVK 1.10.3 has been installed!");
                     }
                     break;
                 case 2:
@@ -300,7 +300,7 @@ namespace GTAIVSetupUtilityWPF
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
                         DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
-                        MessageBox.Show($"Latest DXVK-gplasync has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"Latest DXVK-gplasync has been installed!");
                     }
                     else
                     {
@@ -309,7 +309,7 @@ namespace GTAIVSetupUtilityWPF
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
                         DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
-                        MessageBox.Show($"Latest DXVK has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"Latest DXVK has been installed!");
                     }
                     break;
                 case 3:
@@ -321,7 +321,7 @@ namespace GTAIVSetupUtilityWPF
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
                         DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
-                        MessageBox.Show($"DXVK-async 1.10.1 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"DXVK-async 1.10.1 has been installed!");
                     }
                     else
                     {
@@ -330,7 +330,7 @@ namespace GTAIVSetupUtilityWPF
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
                         DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
-                        MessageBox.Show($"DXVK 1.10.1 has been installed!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show($"DXVK 1.10.1 has been installed!", "Information");
                     }
                     break;
             }
