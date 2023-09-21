@@ -4,16 +4,29 @@ using System.Windows;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
-using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Text.RegularExpressions;
 using System.Net.Http;
-
+using System.Windows.Input;
+using System.Management;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using ByteSizeLib;
+using IniParser;
+using IniParser.Model;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
 {
     public partial class MainWindow : Window
     {
-        public (int,int,bool,bool,bool,bool) resultvk = VulkanChecker.VulkanCheck();
+        (int,int,bool,bool,bool,bool) resultvk = VulkanChecker.VulkanCheck();
+        int installdxvk = 0;
+        bool dxvkonigpu = false;
+        int vram1;
+        int vram2;
+        string iniModify;
+        bool is1080;
+        bool zpatch;
+
 
         private string GetAssemblyVersion()
         {
@@ -31,9 +44,13 @@ namespace GTAIVSetupUtilityWPF
             DebugOutput2.Text = $"Intel iGPU: {resultvk.Item5}";
             DebugOutput.Text = $"NVIDIA GPU: {resultvk.Item6}";
             if (resultvk.Item6 && resultvk.Item1 == 2)
-            {
-                asynccheckbox.IsChecked = false;
-            };
+            { asynccheckbox.IsChecked = false; }
+            }
+
+        private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
+        {
+            Regex regex = new Regex("[^0-9]+");
+            e.Handled = regex.IsMatch(e.Text);
         }
         private void async_Click(object sender, RoutedEventArgs e)
         {
@@ -78,25 +95,51 @@ namespace GTAIVSetupUtilityWPF
                 {
                     if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
                     {
+                        if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8")){ is1080 = true; }
+                        else { is1080 = false; }
+                        if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") && !checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
+                        { vidmemcheck.IsEnabled = false; }
+
                         directorytxt.Text = "Game Directory:";
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
-                        {
-                            dxvkPanel.IsEnabled = false;
-                        }
+                        { dxvkPanel.IsEnabled = false; }
                         else
                         {
                             if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
                             {
                                 installdxvkbtn.Content = "Reinstall DXVK";
                             }
-                            if (!(File.Exists($"{dialog.FileName}\\ZolikaPatch.asi")) && (!(File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi")) && !(File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi"))) && !(File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi")))
-                            {
-                                windowedcheck.IsEnabled = false;
-                            }
                             dxvkPanel.IsEnabled = true;
                         }
+                        if (!(File.Exists($"{dialog.FileName}\\ZolikaPatch.asi")) && (!(File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi")) && !(File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi"))) && !(File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi")))
+                        {
+                            windowedcheck.IsEnabled = false;
+                            windowedcheck.Content = "Borderless Windowed";
+                        }
+                        else
+                        {
+                            if (File.Exists($"{dialog.FileName}\\ZolikaPatch.ini"))
+                            {
+                                zpatch = true;
+                                iniModify = $"{dialog.FileName}\\ZolikaPatch.ini";
+                            }
+                            else if (File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.ini"))
+                            {
+                                zpatch = true;
+                                iniModify = $"{dialog.FileName}\\plugins\\ZolikaPatch.ini";
+                            }
+                            else if (File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini"))
+                            {
+                                iniModify = $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini";
+                            }
+                            else if (File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini"))
+                            {
+                                iniModify = $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini";
+                            }
+                        }
+
                         break;
                     }
                     else
@@ -116,7 +159,6 @@ namespace GTAIVSetupUtilityWPF
         {
             dxvkPanel.IsEnabled = false;
             installdxvkbtn.Content = "Installing...";
-            int installdxvk = 0;
             int dgpu_dxvk_support = resultvk.Item1;
             int igpu_dxvk_support = resultvk.Item2;
             bool igpuonly = resultvk.Item3;
@@ -154,11 +196,11 @@ namespace GTAIVSetupUtilityWPF
                 // User's PC has both a GPU and an iGPU. Doing further checks...
                 switch ((dgpu_dxvk_support, igpu_dxvk_support))
                 {
-                    case (0, 1):
-                    case (0, 2):
+                    case (0, 1): case (0, 2):
                         var result = MessageBox.Show("Your iGPU supports DXVK but your GPU doesn't - do you still wish to install?", "Install DXVK?", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (result == MessageBoxResult.Yes)
                         {
+                            dxvkonigpu = true;
                             switch (igpu_dxvk_support)
                             {
                                 case 1:
@@ -178,13 +220,11 @@ namespace GTAIVSetupUtilityWPF
                         }
                         else
                         {
+                            dxvkonigpu = true;
                             installdxvk = 2;
                         }
                         break;
-                    case (2, 2):
-                    case (1, 1):
-                    case (2, 1):
-                    case (2, 0):
+                    case (2, 2): case (1, 1): case (2, 1): case (2, 0):
                         // User's GPU supports the same or a better version of DXVK as the iGPU.
                         switch (dgpu_dxvk_support)
                         {
@@ -296,11 +336,123 @@ namespace GTAIVSetupUtilityWPF
             }
             installdxvkbtn.Content = "Reinstall DXVK";
             dxvkPanel.IsEnabled = true;
+            windowedcheck.IsChecked = true;
+            vidmemcheck.IsChecked = true;
+            monitordetailcheck.IsChecked = true;
 
         }
         private void setuplaunchoptions_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Placeholder");
+            List<string> launchoptions = new List<string> { };
+            if (norestrictionscheck.IsChecked == true) { launchoptions.Add("-norestrictions"); }
+            if (nomemrestrictcheck.IsChecked == true) { launchoptions.Add("-nomemrestrict"); }
+            else if (managedcheck.IsChecked == true) { launchoptions.Add("-managed"); }
+            if (windowedcheck.IsChecked == true && windowedcheck.IsEnabled)
+            {
+                var parser = new FileIniDataParser();
+                IniData data = parser.ReadFile(iniModify);
+                if (zpatch)
+                {
+                    if (data["Options"]["BorderlessWindowed"] != "1")
+                    {
+                        data["Options"]["BorderlessWindowed"] = "1";
+                        parser.WriteFile(iniModify, data);
+                    }
+                }
+                else
+                {
+                    if (data["MAIN"]["BorderlessWindowed"] != "1")
+                    {
+                        data["MAIN"]["BorderlessWindowed"] = "1";
+                        parser.WriteFile(iniModify, data);
+                    }
+                }
+                launchoptions.Add("-windowed");
+            }
+            if (vidmemcheck.IsChecked == true)
+            {
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
+                foreach (ManagementObject obj in searcher.Get())
+                {
+                    string adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A";
+                    int tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1);
+                    bool h = false;
+                    if (!h)
+                    {
+                        vram1 = tempvram;
+                        h = true;
+                    }
+                    else if (tempvram > vram1 || tempvram > vram2)
+                    {
+                        vram2 = tempvram;
+                    }
+                }
+                if (resultvk.Item3 || resultvk.Item4)
+                {
+                    launchoptions.Add($"-availablevidmem {vram1}");
+                }
+                else if (!resultvk.Item3 && !resultvk.Item4)
+                {
+                    int vram;
+                    if (!dxvkonigpu)
+                    {
+                        vram = Math.Max(vram1, vram2);
+                    }
+                    else
+                    {
+                        vram = Math.Min(vram1, vram2);
+                    }
+                    launchoptions.Add($"-availablevidmem {vram}");
+                }
+            }
+            if (monitordetailcheck.IsChecked == true)
+            {
+                int width, height, refreshRate;
+                DisplayInfo.GetPrimaryDisplayInfo(out width, out height, out refreshRate);
+                launchoptions.Add($"-width {width}");
+                launchoptions.Add($"-height {height}");
+                launchoptions.Add($"-refreshrate {refreshRate}");
+
+                // old code incase the chatgpt:tm: code breaks and i have no better solutions
+
+                /*
+                Screen primaryScreen = Screen.PrimaryScreen;
+                string deviceName = primaryScreen.DeviceName;
+                launchoptions.Add($"-width {primaryScreen.Bounds.Width}");
+                launchoptions.Add($"-height {primaryScreen.Bounds.Height}");
+                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_VideoController"))
+                {
+                    foreach (ManagementObject obj in searcher.Get())
+                    {
+                        if (obj["CurrentRefreshRate"] != null)
+                        {
+                            launchoptions.Add($"-refreshrate {int.Parse(obj["CurrentRefreshRate"].ToString())}");
+                        }
+                    }
+                }
+                */
+            }
+            if (is1080)
+            {
+                if (File.Exists($"{gamedirectory.Text}\\commandline.txt"))
+                {
+                    File.Delete($"{gamedirectory.Text}\\commandline.txt");
+                }
+                using (StreamWriter writer = new StreamWriter($"{gamedirectory.Text}\\commandline.txt"))
+                {
+                    foreach (string line in launchoptions)
+                    {
+                        writer.WriteLine(line);
+                    }
+                }
+                MessageBox.Show($"Following launch options have been set up automatically for you: \n\n{string.Join(" ", launchoptions)}");
+            }
+            else
+            {
+                MessageBox.Show($"The app can't set the launch options automatically, paste them in Steam's Launch Options manually (will be copied to clipboard after you press Ok):\n\n{string.Join(" ", launchoptions)}");
+                Clipboard.SetText(string.Join(" ", launchoptions));
+            }
+
         }
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
