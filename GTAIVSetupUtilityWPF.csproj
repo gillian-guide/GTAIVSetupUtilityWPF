@@ -7,11 +7,29 @@
 	<UseWPF>true</UseWPF>
 	<DebugType>embedded</DebugType>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-	<Version>1.0</Version>
+	<Version>1.1</Version>
+	<ApplicationIcon>Assets\ivlogo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-	<None Remove="ivlogo.png" />
+    <Compile Remove="Resoruces\**" />
+    <Compile Remove="Resources\**" />
+    <EmbeddedResource Remove="Resoruces\**" />
+    <EmbeddedResource Remove="Resources\**" />
+    <None Remove="Resoruces\**" />
+    <None Remove="Resources\**" />
+    <Page Remove="Resoruces\**" />
+    <Page Remove="Resources\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Remove="Assets\about.png" />
+	<None Remove="Assets\ivlogo.png" />
+	<None Remove="ivlogo.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\ivlogo.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,7 +41,8 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Resource Include="ivlogo.png" />
+    <Resource Include="Assets\about.png" />
+    <Resource Include="Assets\ivlogo.png" />
   </ItemGroup>
 
 </Project>

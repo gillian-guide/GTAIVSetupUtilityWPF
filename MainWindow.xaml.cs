@@ -20,7 +20,7 @@ namespace GTAIVSetupUtilityWPF
     {
         (int,int,bool,bool,bool,bool) resultvk = VulkanChecker.VulkanCheck();
         int installdxvk = 0;
-        bool dxvkonigpu = false;
+        bool dxvkonigpu;
         int vram1;
         int vram2;
         string iniModify;
@@ -33,20 +33,6 @@ namespace GTAIVSetupUtilityWPF
             return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString()
                 ?? String.Empty;
         }
-        public MainWindow()
-        {
-            InitializeComponent();
-            VersionTextBlock.Text = $"Version: {GetAssemblyVersion()}";
-            DebugOutput6.Text = $"dGPU DXVK Support: {resultvk.Item1}";
-            DebugOutput5.Text = $"iGPU DXVK Support: {resultvk.Item2}";
-            DebugOutput4.Text = $"iGPU Only: {resultvk.Item3}";
-            DebugOutput3.Text = $"dGPU Only: {resultvk.Item4}";
-            DebugOutput2.Text = $"Intel iGPU: {resultvk.Item5}";
-            DebugOutput.Text = $"NVIDIA GPU: {resultvk.Item6}";
-            if (resultvk.Item6 && resultvk.Item1 == 2)
-            { asynccheckbox.IsChecked = false; }
-            }
-
         private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");
@@ -54,36 +40,82 @@ namespace GTAIVSetupUtilityWPF
         }
         private void async_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("DXVK with async should provide better performance for most, but under some conditions it may provide worse performance instead. Without async, you might stutter the first time you see different areas. It won't stutter the next time in the same area.\n\nNote, however, that performance on NVIDIA when using DXVK 2.0+ may be worse. Feel free to experiment by re-installing DXVK.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("DXVK with async should provide better performance for most, but under some conditions it may provide worse performance instead. Without async, you might stutter the first time you see different areas. It won't stutter the next time in the same area.\n\nNote, however, that performance on NVIDIA when using DXVK 2.0+ may be worse. Feel free to experiment by re-installing DXVK.");
+            }
         }
         private void vsync_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("The in-game VSync implementation produces framepacing issues. DXVK's VSync implementation should be preferred.\n\nIt's recommended to keep this on and in-game's implementation off.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("The in-game VSync implementation produces framepacing issues. DXVK's VSync implementation should be preferred.\n\nIt's recommended to keep this on and in-game's implementation off.");
+            }
+
         }
         private void latency_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("This option may help avoiding further framepacing issues. It's recommended to keep this on.");
+            }
         }
         private void norestrictions_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option allows you to set any in-game settings independently of what the game restricts you to. It's recommended to keep this on. ");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("This option allows you to set any in-game settings independently of what the game restricts you to. It's recommended to keep this on. ");
+            }
         }
         private void managed_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("-managed may improve performance when using DXVK, but it's not compatible with -nomemrestrict. It's recommended to choose -nomemrestrict that allows the game to use all the memory resources up to it's limits.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("-managed may improve performance when using DXVK, but it's not compatible with -nomemrestrict. It's recommended to choose -nomemrestrict that allows the game to use all the memory resources up to it's limits.");
+            }
         }
         private void windowed_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option allows to use Borderless Fullscreen instead of Exclusive Fullscreen. Provides better experience and sometimes better performance. It's recommended to keep this on.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("This option allows to use Borderless Fullscreen instead of Exclusive Fullscreen. Provides better experience and sometimes better performance. It's recommended to keep this on.");
+            }
         }
         private void vidmem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
+            }
         }
         private void monitordetail_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This option forces a specific resolution and refresh rate due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
+            if (tipscheck.IsChecked == true)
+            {
+                MessageBox.Show("This option forces a specific resolution and refresh rate due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
+            }
         }
+        public MainWindow()
+        {
+            InitializeComponent();
+            if (resultvk.Item6 && resultvk.Item1 == 2)
+            { asynccheckbox.IsChecked = false; }
+        }
+
+        private void aboutButton_Click(object sender, RoutedEventArgs e)
+        {
+             MessageBox.Show(
+                 "This software is made by Gillian for the Modding Guide. Below is debug text, you don't need it normally.\n\n" +
+                 $"dGPU DXVK Support: {resultvk.Item1}\n" +
+                 $"iGPU DXVK Support: {resultvk.Item2}\n" +
+                 $"iGPU Only: {resultvk.Item3}\n" +
+                 $"dGPU Only: {resultvk.Item4}\n" +
+                 $"Intel iGPU: {resultvk.Item5}\n" +
+                 $"NVIDIA GPU: {resultvk.Item6}\n\n" +
+                 $"Version: {GetAssemblyVersion()}",
+                 "Information");
+        }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
