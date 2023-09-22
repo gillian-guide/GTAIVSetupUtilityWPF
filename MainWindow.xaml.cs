@@ -106,6 +106,7 @@ namespace GTAIVSetupUtilityWPF
         {
              MessageBox.Show(
                  "This software is made by Gillian for the Modding Guide. Below is debug text, you don't need it normally.\n\n" +
+                 $"Install DXVK: {installdxvk}\n" +
                  $"dGPU DXVK Support: {resultvk.Item1}\n" +
                  $"iGPU DXVK Support: {resultvk.Item2}\n" +
                  $"iGPU Only: {resultvk.Item3}\n" +
@@ -280,8 +281,6 @@ namespace GTAIVSetupUtilityWPF
                     installdxvk = 3;
                 }
             }
-
-            DebugOutput7.Text = $"DXVK: {installdxvk.ToString()}";
 
             List<string> dxvkconf = new List<string> { };
 

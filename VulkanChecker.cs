@@ -81,6 +81,10 @@ namespace GTAIVSetupUtilityWPF
                                         Debug.WriteLine("This GPU supports Latest DXVK.");
                                         dxvkSupport = 2;
                                     }
+                                    else
+                                    {
+                                        throw new System.Exception();
+                                    }
                                 }
                                 catch
                                 {
