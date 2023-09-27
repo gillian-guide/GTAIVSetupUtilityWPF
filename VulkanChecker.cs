@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.Windows;
 
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 // this code accounts for ALL gpu's in the system and tries to work out the best conditions for installing DXVK
@@ -50,9 +51,9 @@ namespace GTAIVSetupUtilityWPF
 
             for (int x = 0; x < i; x++)
             {
-                if (File.Exists($"data{0}.json"))
+                if (File.Exists($"data{x}.json"))
                 {
-                    using (StreamReader file = File.OpenText($"data{0}.json"))
+                    using (StreamReader file = File.OpenText($"data{x}.json"))
                     {
 
                         int dxvkSupport = 0;
@@ -135,7 +136,7 @@ namespace GTAIVSetupUtilityWPF
                             }
                         }
                     }
-                    File.Delete($"data{0}.json");
+                    File.Delete($"data{x}.json");
                 }
                 else { break; }
             }

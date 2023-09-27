@@ -7,8 +7,18 @@
 	<UseWPF>true</UseWPF>
 	<DebugType>embedded</DebugType>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-	<Version>1.1.2</Version>
+	<Version>1.1.3</Version>
 	<ApplicationIcon>Assets\ivlogo.ico</ApplicationIcon>
+	<AssemblyName>$(MSBuildProjectName)</AssemblyName>
+	<Title>Gillian's GTA IV Setup Utility</Title>
+	<Company>$(Authors)</Company>
+	<Authors>Gillian</Authors>
+	<Description>Semi-automatic setup utility for GTA IV</Description>
+	<PackageIcon>ivlogo256.png</PackageIcon>
+	<PackageProjectUrl>https://gillian-guide.github.io/</PackageProjectUrl>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/SandeMC/GTAIVSetupUtilityWPF</RepositoryUrl>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,6 +53,21 @@
   <ItemGroup>
     <Resource Include="Assets\about.png" />
     <Resource Include="Assets\ivlogo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\ivlogo256.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
