@@ -7,6 +7,9 @@
         mc:Ignorable="d"
     Title="Gillian's GTA IV Setup Utility" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterScreen" Icon="/Assets/ivlogo.png" ResizeMode="NoResize">
     <Grid>
+        <Grid Name="Overlay" Background="Black" Opacity="0.9" Visibility="Visible" Panel.ZIndex="1">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="White">Please wait for vulkaninfo to procceed...</TextBlock>
+        </Grid>
         <StackPanel Margin="5,5,5,5" Grid.ColumnSpan="2">
             <TextBlock Margin="0,0,0,0" FontSize="28" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
             <TextBlock x:Name="directorytxt" HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="Wrap" Text="Set your game directory before using:" VerticalAlignment="Top"/>
