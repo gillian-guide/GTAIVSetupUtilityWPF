@@ -1,11 +1,10 @@
 ﻿using ByteSizeLib;
-using IniParser;
-using IniParser.Model;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Management;
 using System.Net.Http;
@@ -26,8 +25,8 @@ namespace GTAIVSetupUtilityWPF
         int vram1;
         int vram2;
         string iniModify;
+        string ziniModify;
         bool isretail;
-        bool zpatch;
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -185,38 +184,54 @@ namespace GTAIVSetupUtilityWPF
                                 Logger.Debug(" Detected d3d9.dll - likely DXVK is already installed.");
                                 installdxvkbtn.Content = "Reinstall DXVK";
                             }
+                            else
+                            {
+                                Logger.Debug(" DXVK is not installed, changing the button name incase the user changed directories before.");
+                                installdxvkbtn.Content = "Install DXVK";
+                            }
                             Logger.Debug(" Enabled the DXVK panel.");
                             dxvkPanel.IsEnabled = true;
                         }
-                        if (!(File.Exists($"{dialog.FileName}\\ZolikaPatch.asi")) && (!(File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi")) && !(File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi"))) && !(File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi")))
+                        bool fusionFixPresent = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi") || File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi");
+                        bool zolikaPatchPresent = File.Exists($"{dialog.FileName}\\ZolikaPatch.asi") || File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi");
+                        switch (fusionFixPresent, zolikaPatchPresent)
                         {
-                            Logger.Debug(" User doesn't have neither ZolikaPatch or FusionFix. Disabling the Borderless Windowed toggle.");
-                            windowedcheck.IsEnabled = false;
-                        }
-                        else
-                        {
-                            if (File.Exists($"{dialog.FileName}\\ZolikaPatch.ini"))
-                            {
-                                Logger.Debug(" User has ZolikaPatch.");
-                                zpatch = true;
-                                iniModify = $"{dialog.FileName}\\ZolikaPatch.ini";
-                            }
-                            else if (File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.ini"))
-                            {
-                                Logger.Debug(" User has ZolikaPatch.");
-                                zpatch = true;
-                                iniModify = $"{dialog.FileName}\\plugins\\ZolikaPatch.ini";
-                            }
-                            else if (File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini"))
-                            {
-                                Logger.Debug(" User has FusionFix.");
-                                iniModify = $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini";
-                            }
-                            else if (File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini"))
-                            {
-                                Logger.Debug(" User has FusionFix.");
-                                iniModify = $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini";
-                            }
+                            case (false, false):
+                                Logger.Debug(" User doesn't have neither ZolikaPatch or FusionFix. Disabling the Borderless Windowed toggle.");
+                                windowedcheck.IsEnabled = false;
+                                break;
+                            case (true, false): case (false, true):
+                                string iniFilePath = fusionFixPresent
+                                ? (File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini") ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini" : $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini")
+                                : (File.Exists($"{dialog.FileName}\\ZolikaPatch.ini") ? $"{dialog.FileName}\\ZolikaPatch.ini" : $"{dialog.FileName}\\plugins\\ZolikaPatch.ini");
+                                if (!string.IsNullOrEmpty(iniFilePath))
+                                {
+                                    Logger.Debug(fusionFixPresent ? " User has FusionFix." : " User has ZolikaPatch.");
+                                    iniModify = iniFilePath;
+                                }
+                                break;
+                            case (true, true):
+                                string fusionFixIniFilePath = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini")
+                                    ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini"
+                                    : $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini";
+                                string zolikaPatchIniFilePath = File.Exists($"{dialog.FileName}\\ZolikaPatch.ini")
+                                    ? $"{dialog.FileName}\\ZolikaPatch.ini"
+                                    : $"{dialog.FileName}\\plugins\\ZolikaPatch.ini";
+                                Logger.Debug(" User has FusionFix and ZolikaPatch. Disabling unnecessary ZolikaPatch options...");
+                                iniModify = fusionFixIniFilePath;
+                                ziniModify = zolikaPatchIniFilePath;
+                                IniParser iniParser = new IniParser(ziniModify);
+                                iniParser.EditValue("BuildingAlphaFix", "0");
+                                iniParser.EditValue("EmissiveLerpFix", "0");
+                                iniParser.EditValue("BorderlessWindowed", "0");
+                                iniParser.EditValue("CutsceneFixes", "0");
+                                iniParser.EditValue("HighFPSBikePhysicsFix", "0");
+                                iniParser.EditValue("OutOfCommissionFix", "0");
+                                iniParser.EditValue("SkipIntro", "0");
+                                iniParser.EditValue("SkipMenu", "0");
+                                iniParser.SaveFile();
+                                break;
+
                         }
 
                         break;
@@ -467,9 +482,32 @@ namespace GTAIVSetupUtilityWPF
             if (norestrictionscheck.IsChecked == true) { launchoptions.Add("-norestrictions"); Logger.Debug(" Added -norestrictions."); }
             if (nomemrestrictcheck.IsChecked == true) { launchoptions.Add("-nomemrestrict"); Logger.Debug(" Added -nomemrestrict."); }
             else if (managedcheck.IsChecked == true) { launchoptions.Add("-managed"); Logger.Debug(" Added -managed."); }
-            if (windowedcheck.IsChecked == true && windowedcheck.IsEnabled)
+            if (windowedcheck.IsEnabled)
             {
                 Logger.Debug(" Setting up Borderless Windowed...");
+
+                IniParser iniParser = new IniParser(iniModify);
+                string borderlessWindowedValue = iniParser.ReadValue("BorderlessWindowed");
+                if (windowedcheck.IsChecked == true)
+                {
+                    Logger.Debug(" User chose to enable Borderless Windowed");
+                    if (borderlessWindowedValue == "0")
+                    {
+                        Logger.Debug(" Borderless Windowed is disabled in the ini, enabling it back...");
+                        iniParser.EditValue("BorderlessWindowed", "1");
+                        iniParser.SaveFile();
+                    }
+                    launchoptions.Add("-windowed");
+                    Logger.Debug(" Added -windowed.");
+                }
+                else if (windowedcheck.IsChecked == false && borderlessWindowedValue == "1")
+                {
+                    Logger.Debug(" User chose to disable Borderless Windowed but it's enabled in the ini, disabling it...");
+                    iniParser.EditValue("BorderlessWindowed", "0");
+                    iniParser.SaveFile();
+                }
+
+                /* Old parser, kept incase I'll need to revert it.
                 var parser = new FileIniDataParser();
                 IniData data = parser.ReadFile(iniModify);
                 if (zpatch)
@@ -490,8 +528,7 @@ namespace GTAIVSetupUtilityWPF
                         Logger.Debug(" Set up Borderless Windowed for FusionFix.");
                     }
                 }
-                launchoptions.Add("-windowed");
-                Logger.Debug(" Added -windowed.");
+                */
             }
             if (vidmemcheck.IsChecked == true)
             {
@@ -541,25 +578,6 @@ namespace GTAIVSetupUtilityWPF
                 launchoptions.Add($"-height {height}");
                 launchoptions.Add($"-refreshrate {refreshRate}");
                 Logger.Debug($" Added -width {width}, -height {height}, -refreshrate {refreshRate}.");
-
-                // old code incase the chatgpt:tm: code breaks and i have no better solutions
-
-                /*
-                Screen primaryScreen = Screen.PrimaryScreen;
-                string deviceName = primaryScreen.DeviceName;
-                launchoptions.Add($"-width {primaryScreen.Bounds.Width}");
-                launchoptions.Add($"-height {primaryScreen.Bounds.Height}");
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_VideoController"))
-                {
-                    foreach (ManagementObject obj in searcher.Get())
-                    {
-                        if (obj["CurrentRefreshRate"] != null)
-                        {
-                            launchoptions.Add($"-refreshrate {int.Parse(obj["CurrentRefreshRate"].ToString())}");
-                        }
-                    }
-                }
-                */
             }
             if (isretail == true)
             {
