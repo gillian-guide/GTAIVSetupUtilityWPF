@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+
+// hi here, i'm an awful coder, so please clean up for me if it really bothers you
+// i couldn't find a good ini parser for my needs so i just begged chatgpt for one tbh, idk if it works for anything else but i'd rather not qusetion it
 
 namespace GTAIVSetupUtilityWPF
 {
