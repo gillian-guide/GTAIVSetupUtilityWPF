@@ -26,6 +26,7 @@ namespace GTAIVSetupUtilityWPF
         int vram2;
         string iniModify;
         string ziniModify;
+        bool ffix;
         bool isretail;
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
@@ -206,6 +207,7 @@ namespace GTAIVSetupUtilityWPF
                                 : (File.Exists($"{dialog.FileName}\\ZolikaPatch.ini") ? $"{dialog.FileName}\\ZolikaPatch.ini" : $"{dialog.FileName}\\plugins\\ZolikaPatch.ini");
                                 if (!string.IsNullOrEmpty(iniFilePath))
                                 {
+                                    ffix = fusionFixPresent;
                                     Logger.Debug(fusionFixPresent ? " User has FusionFix." : " User has ZolikaPatch.");
                                     iniModify = iniFilePath;
                                 }
@@ -220,15 +222,16 @@ namespace GTAIVSetupUtilityWPF
                                 Logger.Debug(" User has FusionFix and ZolikaPatch. Disabling unnecessary ZolikaPatch options...");
                                 iniModify = fusionFixIniFilePath;
                                 ziniModify = zolikaPatchIniFilePath;
+                                ffix = true;
                                 IniParser iniParser = new IniParser(ziniModify);
-                                iniParser.EditValue("BuildingAlphaFix", "0");
-                                iniParser.EditValue("EmissiveLerpFix", "0");
-                                iniParser.EditValue("BorderlessWindowed", "0");
-                                iniParser.EditValue("CutsceneFixes", "0");
-                                iniParser.EditValue("HighFPSBikePhysicsFix", "0");
-                                iniParser.EditValue("OutOfCommissionFix", "0");
-                                iniParser.EditValue("SkipIntro", "0");
-                                iniParser.EditValue("SkipMenu", "0");
+                                iniParser.EditValue("Options", "BuildingAlphaFix", "0");
+                                iniParser.EditValue("Options", "EmissiveLerpFix", "0");
+                                iniParser.EditValue("Options", "BorderlessWindowed", "0");
+                                iniParser.EditValue("Options", "CutsceneFixes", "0");
+                                iniParser.EditValue("Options", "HighFPSBikePhysicsFix", "0");
+                                iniParser.EditValue("Options", "OutOfCommissionFix", "0");
+                                iniParser.EditValue("Options", "SkipIntro", "0");
+                                iniParser.EditValue("Options", "SkipMenu", "0");
                                 iniParser.SaveFile();
                                 break;
 
@@ -487,14 +490,29 @@ namespace GTAIVSetupUtilityWPF
                 Logger.Debug(" Setting up Borderless Windowed...");
 
                 IniParser iniParser = new IniParser(iniModify);
-                string borderlessWindowedValue = iniParser.ReadValue("BorderlessWindowed");
+                string borderlessWindowedValue;
+                if (ffix == true)
+                {
+                    borderlessWindowedValue = iniParser.ReadValue("MAIN", "BorderlessWindowed");
+                }
+                else
+                {
+                    borderlessWindowedValue = iniParser.ReadValue("Options", "BorderlessWindowed");
+                }
                 if (windowedcheck.IsChecked == true)
                 {
                     Logger.Debug(" User chose to enable Borderless Windowed");
                     if (borderlessWindowedValue == "0")
                     {
                         Logger.Debug(" Borderless Windowed is disabled in the ini, enabling it back...");
-                        iniParser.EditValue("BorderlessWindowed", "1");
+                        if (ffix == true)
+                        {
+                            iniParser.EditValue("MAIN", "BorderlessWindowed", "1");
+                        }
+                        else
+                        {
+                            iniParser.EditValue("Options", "BorderlessWindowed", "1");
+                        }
                         iniParser.SaveFile();
                     }
                     launchoptions.Add("-windowed");
@@ -503,7 +521,14 @@ namespace GTAIVSetupUtilityWPF
                 else if (windowedcheck.IsChecked == false && borderlessWindowedValue == "1")
                 {
                     Logger.Debug(" User chose to disable Borderless Windowed but it's enabled in the ini, disabling it...");
-                    iniParser.EditValue("BorderlessWindowed", "0");
+                    if (ffix == true)
+                    {
+                        iniParser.EditValue("MAIN", "BorderlessWindowed", "0");
+                    }
+                    else
+                    {
+                        iniParser.EditValue("Options", "BorderlessWindowed", "0");
+                    }
                     iniParser.SaveFile();
                 }
 
