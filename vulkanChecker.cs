@@ -8,7 +8,7 @@ using System.Windows;
 // so please don't strip the functionality
 namespace GTAIVSetupUtilityWPF
 {
-    public class VulkanChecker
+    public class vulkanChecker
     {
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
@@ -42,17 +42,28 @@ namespace GTAIVSetupUtilityWPF
                 process.Start();
                 string output = process.StandardOutput.ReadToEnd();
 
-                process.WaitForExit();
+                process.WaitForExit(10);
                 if (process.ExitCode != 0 && output.Contains("The selected gpu"))
                 {
                     Logger.Debug($" GPU{i} doesn't exist, moving on");
                     break;
                 }
-                else if (process.ExitCode != 0)
+                else if (!File.Exists($"data{i}.json"))
                 {
-                    MessageBox.Show("The vulkaninfo check failed. This usually means your GPU does not support Vulkan. Make sure your drivers are up-to-date. DXVK is not available.");
-                    Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
-                    return (0, 0, false, false, false, false);
+                    process.StartInfo.Arguments = $"--json={i} --output data{i}.json > data{i}.json";
+                    process.Start();
+                    process.WaitForExit(10);
+                    if (process.ExitCode != 0 && output.Contains("The selected gpu"))
+                    {
+                        Logger.Debug($" GPU{i} doesn't exist, moving on");
+                        break;
+                    }
+                    else if (!File.Exists($"data{i}.json"))
+                    {
+                        MessageBox.Show("The vulkaninfo check failed. This usually means your GPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either. DXVK is not available.");
+                        Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
+                        return (0, 0, false, false, false, false);
+                    }
                 }
 
                 i++;
@@ -68,100 +79,108 @@ namespace GTAIVSetupUtilityWPF
                     {
 
                         int dxvkSupport = 0;
-                        using (JsonDocument doc = JsonDocument.Parse(file.ReadToEnd()))
+                        JsonDocument doc;
+                        try
                         {
-                            JsonElement root = doc.RootElement;
-                            if (root.TryGetProperty("capabilities", out JsonElement h))
+                            doc = JsonDocument.Parse(file.ReadToEnd());
+                        }
+                        catch (JsonException)
+                        {
+                            Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has no vulkan 1.1+ support.");
+                            MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have no support for DXVK, but that may not be the case.");
+                            return (0, 0, false, false, false, false);
+                        }
+                        JsonElement root = doc.RootElement;
+                        if (root.TryGetProperty("capabilities", out JsonElement h))
+                        {
+                            JsonElement capabilities = h.GetProperty("device");
+                            string deviceName = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceName").GetString();
+                            uint apiVersion = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("apiVersion").GetUInt32();
+                            double vulkanVer = ConvertApiVersion(apiVersion);
+
+                            Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVer}");
+                            if (deviceName.Contains("NVIDIA"))
                             {
-                                JsonElement capabilities = h.GetProperty("device");
-                                string deviceName = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceName").GetString();
-                                uint apiVersion = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("apiVersion").GetUInt32();
-                                double vulkanVer = ConvertApiVersion(apiVersion);
-
-                                Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVer}");
-                                if (deviceName.Contains("NVIDIA"))
+                                Logger.Info($" GPU{x} is an NVIDIA GPU.");
+                                nvidiaGpu = true;
+                            }
+                            try
+                            {
+                                Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
+                                if (capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_robustness2", out _)
+                                    && capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_transform_feedback", out _)
+                                    && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("robustBufferAccess2").GetBoolean()
+                                    && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("nullDescriptor").GetBoolean())
                                 {
-                                    Logger.Info($" GPU{x} is an NVIDIA GPU.");
-                                    nvidiaGpu = true;
+                                    Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
+                                    dxvkSupport = 2;
                                 }
-                                try
+                                else
                                 {
-                                    Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
-                                    if (capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_robustness2", out _)
-                                        && capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_transform_feedback", out _)
-                                        && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("robustBufferAccess2").GetBoolean()
-                                        && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("nullDescriptor").GetBoolean())
-                                    {
-                                        Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
-                                        dxvkSupport = 2;
-                                    }
-                                    else
-                                    {
-                                        Logger.Debug($" GPU{x} doesn't support DXVK 2.x, throwing an exception because doing it any other way is annoying...");
-                                        throw new System.Exception();
-                                    }
-                                }
-                                catch
-                                {
-                                    Logger.Debug($" Catched an exception, this means GPU{x} doesn't support DXVK 2.x, checking other versions...");
-                                    if (vulkanVer < 1.1)
-                                    {
-                                        Logger.Info($" GPU{x} doesn't support DXVK or has  outdated drivers.");
-                                    }
-                                    else if (vulkanVer > 1.1 && vulkanVer < 1.3)
-                                    {
-                                        Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
-                                        dxvkSupport = 1;
-                                    }
-                                }
-
-                                if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceType").GetString() == "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU" && dxvkSupport > vkDgpuDxvkSupport)
-                                {
-                                    Logger.Info($" GPU{x} is a discrete GPU.");
-                                    vkDgpuDxvkSupport = dxvkSupport;
-                                    igpuOnly = false;
-                                }
-                                else if (dxvkSupport > vkIgpuDxvkSupport)
-                                {
-                                    Logger.Info($" GPU{x} is an integrated GPU.");
-                                    vkIgpuDxvkSupport = dxvkSupport;
-                                    dgpuOnly = false;
-                                    if (deviceName.Contains("Intel"))
-                                    {
-                                        Logger.Info($" GPU{x} is an integrated Intel iGPU.");
-                                        intelIgpu = true;
-                                    }
+                                    Logger.Debug($" GPU{x} doesn't support DXVK 2.x, throwing an exception because doing it any other way is annoying...");
+                                    throw new System.Exception();
                                 }
                             }
-
-                            else if (root.TryGetProperty("VkPhysicalDeviceProperties", out JsonElement n))
+                            catch
                             {
-                                Logger.Debug($" Couldn't check the json normally, user likely has an Intel iGPU. Performing alternative check...");
-                                JsonElement deviceName = n.GetProperty("deviceName");
-                                JsonElement vulkanVer = root.GetProperty("comments").GetProperty("vulkanApiVersion");
-
-                                Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVer}");
-                                if (deviceName.ToString().Contains("HD Graphics"))
+                                Logger.Debug($" Catched an exception, this means GPU{x} doesn't support DXVK 2.x, checking other versions...");
+                                if (vulkanVer < 1.1)
                                 {
-                                    Logger.Info($" GPU{x} is an integrated Intel iGPU.");
-                                    dgpuOnly = false;
-                                    intelIgpu = true;
+                                    Logger.Info($" GPU{x} doesn't support DXVK or has  outdated drivers.");
                                 }
-                                if (System.Convert.ToInt16(vulkanVer.ToString().Split('.')[0]) >= 1 && System.Convert.ToInt16(vulkanVer.ToString().Split('.')[1]) >= 1)
+                                else if (vulkanVer > 1.1 && vulkanVer < 1.3)
                                 {
                                     Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
-                                    vkIgpuDxvkSupport = 1;
+                                    dxvkSupport = 1;
                                 }
                             }
-                            else
+
+                            if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceType").GetString() == "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU" && dxvkSupport > vkDgpuDxvkSupport)
                             {
-                                Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has an Intel iGPU.");
-                                MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have an Intel iGPU with outdated drivers, but that may not be the case.");
-                                igpuOnly = true;
+                                Logger.Info($" GPU{x} is a discrete GPU.");
+                                vkDgpuDxvkSupport = dxvkSupport;
+                                igpuOnly = false;
+                            }
+                            else if (dxvkSupport > vkIgpuDxvkSupport)
+                            {
+                                Logger.Info($" GPU{x} is an integrated GPU.");
+                                vkIgpuDxvkSupport = dxvkSupport;
+                                dgpuOnly = false;
+                                if (deviceName.Contains("Intel"))
+                                {
+                                    Logger.Info($" GPU{x} is an integrated Intel iGPU.");
+                                    intelIgpu = true;
+                                }
+                            }
+                        }
+
+                        else if (root.TryGetProperty("VkPhysicalDeviceProperties", out JsonElement n))
+                        {
+                            Logger.Debug($" Couldn't check the json normally, user likely has an Intel iGPU. Performing alternative check...");
+                            JsonElement deviceName = n.GetProperty("deviceName");
+                            JsonElement vulkanVer = root.GetProperty("comments").GetProperty("vulkanApiVersion");
+
+                            Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVer}");
+                            if (deviceName.ToString().Contains("HD Graphics"))
+                            {
+                                Logger.Info($" GPU{x} is an integrated Intel iGPU.");
                                 dgpuOnly = false;
                                 intelIgpu = true;
+                            }
+                            if (System.Convert.ToInt16(vulkanVer.ToString().Split('.')[0]) >= 1 && System.Convert.ToInt16(vulkanVer.ToString().Split('.')[1]) >= 1)
+                            {
+                                Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
                                 vkIgpuDxvkSupport = 1;
                             }
+                        }
+                        else
+                        {
+                            Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has an Intel iGPU.");
+                            MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have an Intel iGPU with outdated drivers, but that may not be the case.");
+                            igpuOnly = true;
+                            dgpuOnly = false;
+                            intelIgpu = true;
+                            vkIgpuDxvkSupport = 1;
                         }
                     }
                     Logger.Debug($" Removing data{x}.json...");

@@ -48,7 +48,7 @@ namespace GTAIVSetupUtilityWPF
         async private void VKCheck()
         {
             Logger.Info(" Initializing the vulkan check...");
-            resultvk = VulkanChecker.VulkanCheck();
+            resultvk = vulkanChecker.VulkanCheck();
             Logger.Info(" Vulkan check finished!");
             if (resultvk.Item6 && resultvk.Item1 == 2) { asynccheckbox.IsChecked = false; Logger.Debug($" User has an NVIDIA GPU, untoggling the async checkbox..."); }
             Overlay.Visibility = Visibility.Collapsed;
