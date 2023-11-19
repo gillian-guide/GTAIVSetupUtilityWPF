@@ -38,9 +38,18 @@ namespace GTAIVSetupUtilityWPF
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.CreateNoWindow = true;
-
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
+                string output;
+                try
+                {
+                    process.Start();
+                    output = process.StandardOutput.ReadToEnd();
+                }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    MessageBox.Show("The vulkaninfo check failed. This usually means your GPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either. DXVK is not available.");
+                    Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
+                    return (0, 0, false, false, false, false);
+                }
 
                 process.WaitForExit(10);
                 if (process.ExitCode != 0 && output.Contains("The selected gpu"))
@@ -50,6 +59,7 @@ namespace GTAIVSetupUtilityWPF
                 }
                 else if (!File.Exists($"data{i}.json"))
                 {
+                    Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
                     process.StartInfo.Arguments = $"--json={i} --output data{i}.json > data{i}.json";
                     process.Start();
                     process.WaitForExit(10);
