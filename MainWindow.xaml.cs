@@ -33,8 +33,7 @@ namespace GTAIVSetupUtilityWPF
 
         public MainWindow()
         {
-            if ( File.Exists("GTAIVSetupUtilityLogOld.txt")) { File.Delete("GTAIVSetupUtilityLogOld.txt"); }
-            if ( File.Exists("GTAIVSetupUtilityLog.txt")) { File.Move("GTAIVSetupUtilityLog.txt", "GTAIVSetupUtilityLogOld.txt"); }
+            if ( File.Exists("GTAIVSetupUtilityLog.txt")) { File.Delete("GTAIVSetupUtilityLog.txt"); }
             NLog.LogManager.Setup().LoadConfiguration(builder =>
             {
                 builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToFile(fileName: "GTAIVSetupUtilityLog.txt");
