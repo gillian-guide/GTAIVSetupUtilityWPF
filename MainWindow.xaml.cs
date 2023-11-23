@@ -125,7 +125,7 @@ namespace GTAIVSetupUtilityWPF
             if (tipscheck.IsChecked == true)
             {
                 Logger.Debug(" Displaying a tip...");
-                MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
+                MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. Due to weird issues that occur from the game using more than 3GB, the toggle only sets the value to 3GB. You can manually change the lock to 4GB or higher, but there's little gain to doing that. It's recommended to keep this at default.");
             }
         }
         private void monitordetail_Click(object sender, RoutedEventArgs e)
@@ -576,6 +576,7 @@ namespace GTAIVSetupUtilityWPF
                 }
                 if (resultvk.Item3 || resultvk.Item4)
                 {
+                    if (vram1 > 3072) vram1 = 3072;
                     launchoptions.Add($"-availablevidmem {vram1}");
                     Logger.Debug($" Added -availablevidmem {vram1}.");
                 }
@@ -590,6 +591,7 @@ namespace GTAIVSetupUtilityWPF
                     {
                         vram = Math.Min(vram1, vram2);
                     }
+                    if (vram > 3072) vram = 3072;
                     launchoptions.Add($"-availablevidmem {vram}");
                     Logger.Debug($" Added -availablevidmem {vram}.");
                 }
@@ -621,12 +623,12 @@ namespace GTAIVSetupUtilityWPF
                     }
                 }
                 Logger.Info($" Following launch options have been set to commandline.txt: {string.Join(" ", launchoptions)}");
-                MessageBox.Show($"Following launch options have been set up automatically for you: \n\n{string.Join(" ", launchoptions)}");
+                MessageBox.Show($"Following launch options have been set up automatically for you: \n\n{string.Join(" ", launchoptions)}\n\nDo not worry that the game only detects 3072MB of VRAM - that is intentional and you can change that if you need to.");
             }
             else
             {
                 Logger.Info($" Game .exe is 1.2 or later - asked user to input the values on their own and copied them to clipboard: {string.Join(" ", launchoptions)}");
-                MessageBox.Show($" The app can't set the launch options automatically, paste them in Steam's Launch Options manually (will be copied to clipboard after you press Ok):\n\n{string.Join(" ", launchoptions)}");
+                MessageBox.Show($" The app can't set the launch options automatically, paste them in Steam's Launch Options manually (will be copied to clipboard after you press Ok):\n\n{string.Join(" ", launchoptions)}\n\nDo not worry that the game only detects 3072MB of VRAM - that is intentional and you can change that if you need to.");
                 try { Clipboard.SetText(string.Join(" ", launchoptions)); } catch (Exception ex) { MessageBox.Show($" The app couldn't copy the options to clipboard - input them manually:\n\n{string.Join(" ", launchoptions)}"); Logger.Debug(ex, " Weird issues with clipboard access."); }
             }
 
