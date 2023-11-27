@@ -4,7 +4,6 @@ using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Management;
 using System.Net.Http;
@@ -176,7 +175,7 @@ namespace GTAIVSetupUtilityWPF
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
-                        { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
+                            { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
                         else
                         {
                             if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
@@ -186,41 +185,39 @@ namespace GTAIVSetupUtilityWPF
                             }
                             else
                             {
-                                Logger.Debug(" DXVK is not installed, changing the button name incase the user changed directories before.");
+                                Logger.Debug(" DXVK is not installed, updating the button name incase the user changed directories before.");
                                 installdxvkbtn.Content = "Install DXVK";
                             }
                             Logger.Debug(" Enabled the DXVK panel.");
                             dxvkPanel.IsEnabled = true;
                         }
-                        bool fusionFixPresent = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi") || File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi");
-                        bool zolikaPatchPresent = File.Exists($"{dialog.FileName}\\ZolikaPatch.asi") || File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi");
-                        switch (fusionFixPresent, zolikaPatchPresent)
+                        string fusionFixPath = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi") ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini" :
+                            File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi") ? $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini" : string.Empty;
+                        string fusionFixCfgPath = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.cfg") ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.cfg" :
+                            File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.cfg") ? $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.cfg" : string.Empty;
+                        string zolikaPatchPath = File.Exists($"{dialog.FileName}\\ZolikaPatch.asi") ? $"{dialog.FileName}\\ZolikaPatch.asi" :
+                            File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi") ? $"{dialog.FileName}\\plugins\\ZolikaPatch.asi" : string.Empty;
+                        switch (!string.IsNullOrEmpty(fusionFixPath), !string.IsNullOrEmpty(zolikaPatchPath))
                         {
                             case (false, false):
                                 Logger.Debug(" User doesn't have neither ZolikaPatch or FusionFix. Disabling the Borderless Windowed toggle.");
+                                windowedcheck.IsChecked = false;
                                 windowedcheck.IsEnabled = false;
                                 break;
-                            case (true, false): case (false, true):
-                                string iniFilePath = fusionFixPresent
-                                ? (File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini") ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini" : $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini")
-                                : (File.Exists($"{dialog.FileName}\\ZolikaPatch.ini") ? $"{dialog.FileName}\\ZolikaPatch.ini" : $"{dialog.FileName}\\plugins\\ZolikaPatch.ini");
-                                if (!string.IsNullOrEmpty(iniFilePath))
-                                {
-                                    ffix = fusionFixPresent;
-                                    Logger.Debug(fusionFixPresent ? " User has FusionFix." : " User has ZolikaPatch.");
-                                    iniModify = iniFilePath;
-                                }
+                            case (true, false):
+                                iniModify = !string.IsNullOrEmpty(fusionFixCfgPath) ? fusionFixCfgPath : fusionFixPath;
+                                ffix = true;
+                                Logger.Debug(" User has FusionFix.");
+                                break;
+                            case (false, true):
+                                iniModify = zolikaPatchPath;
+                                ffix = false;
+                                Logger.Debug(" User has ZolikaPatch.");
                                 break;
                             case (true, true):
-                                string fusionFixIniFilePath = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini")
-                                    ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini"
-                                    : $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini";
-                                string zolikaPatchIniFilePath = File.Exists($"{dialog.FileName}\\ZolikaPatch.ini")
-                                    ? $"{dialog.FileName}\\ZolikaPatch.ini"
-                                    : $"{dialog.FileName}\\plugins\\ZolikaPatch.ini";
                                 Logger.Debug(" User has FusionFix and ZolikaPatch. Disabling unnecessary ZolikaPatch options...");
-                                iniModify = fusionFixIniFilePath;
-                                ziniModify = zolikaPatchIniFilePath;
+                                iniModify = fusionFixCfgPath;
+                                ziniModify = zolikaPatchPath;
                                 ffix = true;
                                 IniParser iniParser = new IniParser(ziniModify);
                                 iniParser.EditValue("Options", "BuildingAlphaFix", "0");
