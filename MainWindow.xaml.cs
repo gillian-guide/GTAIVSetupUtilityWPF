@@ -2,7 +2,7 @@ using ByteSizeLib;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using NLog;
 using System;
-using System.Linq:
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -192,11 +192,11 @@ namespace GTAIVSetupUtilityWPF
                             Logger.Debug(" Enabled the DXVK panel.");
                             dxvkPanel.IsEnabled = true;
                         }
-                        
+
                         string fusionFixPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.ini", SearchOption.AllDirectories).FirstOrDefault();
                         string fusionFixCfgPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.cfg", SearchOption.AllDirectories).FirstOrDefault();
                         string zolikaPatchPath = Directory.GetFiles(dialog.FileName, "ZolikaPatch.ini", SearchOption.AllDirectories).FirstOrDefault();
-                        
+
                         switch (!string.IsNullOrEmpty(fusionFixPath), !string.IsNullOrEmpty(zolikaPatchPath))
                         {
                             case (false, false):
