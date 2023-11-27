@@ -195,7 +195,7 @@ namespace GTAIVSetupUtilityWPF
                         
                         string fusionFixPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.ini", SearchOption.AllDirectories).FirstOrDefault();
                         string fusionFixCfgPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.cfg", SearchOption.AllDirectories).FirstOrDefault();
-                        string zolikaPatchPath = Directory.GetFiles(dialog.FileName, "ZolikaPatch.asi", SearchOption.AllDirectories).FirstOrDefault();
+                        string zolikaPatchPath = Directory.GetFiles(dialog.FileName, "ZolikaPatch.ini", SearchOption.AllDirectories).FirstOrDefault();
                         
                         switch (!string.IsNullOrEmpty(fusionFixPath), !string.IsNullOrEmpty(zolikaPatchPath))
                         {
