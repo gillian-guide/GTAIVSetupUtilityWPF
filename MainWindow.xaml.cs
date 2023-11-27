@@ -191,12 +191,11 @@ namespace GTAIVSetupUtilityWPF
                             Logger.Debug(" Enabled the DXVK panel.");
                             dxvkPanel.IsEnabled = true;
                         }
-                        string fusionFixPath = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.asi") ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.ini" :
-                            File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.asi") ? $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.ini" : string.Empty;
-                        string fusionFixCfgPath = File.Exists($"{dialog.FileName}\\GTAIV.EFLC.FusionFix.cfg") ? $"{dialog.FileName}\\GTAIV.EFLC.FusionFix.cfg" :
-                            File.Exists($"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.cfg") ? $"{dialog.FileName}\\plugins\\GTAIV.EFLC.FusionFix.cfg" : string.Empty;
-                        string zolikaPatchPath = File.Exists($"{dialog.FileName}\\ZolikaPatch.asi") ? $"{dialog.FileName}\\ZolikaPatch.asi" :
-                            File.Exists($"{dialog.FileName}\\plugins\\ZolikaPatch.asi") ? $"{dialog.FileName}\\plugins\\ZolikaPatch.asi" : string.Empty;
+                        
+                        string fusionFixPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.ini", SearchOption.AllDirectories).FirstOrDefault():
+                        string fusionFixCfgPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.cfg", SearchOption.AllDirectories).FirstOrDefault():
+                        string zolikaPatchPath = Directory.GetFiles(dialog.FileName, "ZolikaPatch.asi", SearchOption.AllDirectories).FirstOrDefault():
+                        
                         switch (!string.IsNullOrEmpty(fusionFixPath), !string.IsNullOrEmpty(zolikaPatchPath))
                         {
                             case (false, false):
