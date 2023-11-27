@@ -1,5 +1,5 @@
-﻿using ByteSizeLib;
-
+using ByteSizeLib;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using NLog;
 using System;
 using System.Collections.Generic;
@@ -11,8 +11,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
-
-using Microsoft.Win32:
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -160,31 +158,27 @@ namespace GTAIVSetupUtilityWPF
             Logger.Debug(" User is selecting the game folder...");
             while (true)
             {
-                OpenFolderDialog dialog = new();
-                
-                dialog.Multiselect = false;
-                dialog.Title = "Select a folder";
-                
+                CommonOpenFileDialog dialog = new CommonOpenFileDialog();
                 dialog.InitialDirectory = "C:\\Program Files (x86)\\Steam\\steamapps\\Grand Theft Auto IV\\GTAIV";
-
-                if (dialog.ShowDialog() == true)
+                dialog.IsFolderPicker = true;
+                if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     Logger.Debug(" User selected a folder, proceeding...");
-                    if (checkVersion.GetFileVersion($"{dialog.FolderName}\\GTAIV.exe").StartsWith("1, 0") || (checkVersion.GetFileVersion($"{dialog.FolderName}\\GTAIV.exe").StartsWith("1.2")))
+                    if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
                     {
-                        if (checkVersion.GetFileVersion($"{dialog.FolderName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
+                        if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
                         else { isretail = false; Logger.Debug(" Folder contains an exe of Steam Version."); }
-                        if (isretail == true && !checkVersion.GetFileVersion($"{dialog.FolderName}\\GTAIV.exe").StartsWith("1, 0, 8"))
+                        if (isretail == true && !checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
                         { vidmemcheck.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
 
                         directorytxt.Text = "Game Directory:";
-                        gamedirectory.Text = dialog.FolderName;
+                        gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
                             { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
                         else
                         {
-                            if (File.Exists($"{dialog.FolderName}\\d3d9.dll"))
+                            if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
                             {
                                 Logger.Debug(" Detected d3d9.dll - likely DXVK is already installed.");
                                 installdxvkbtn.Content = "Reinstall DXVK";
@@ -198,9 +192,9 @@ namespace GTAIVSetupUtilityWPF
                             dxvkPanel.IsEnabled = true;
                         }
                         
-                        string fusionFixPath = Directory.GetFiles(dialog.FolderName, "GTAIV.EFLC.FusionFix.ini", SearchOption.AllDirectories).FirstOrDefault():
-                        string fusionFixCfgPath = Directory.GetFiles(dialog.FolderName, "GTAIV.EFLC.FusionFix.cfg", SearchOption.AllDirectories).FirstOrDefault():
-                        string zolikaPatchPath = Directory.GetFiles(dialog.FolderName, "ZolikaPatch.asi", SearchOption.AllDirectories).FirstOrDefault():
+                        string fusionFixPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.ini", SearchOption.AllDirectories).FirstOrDefault();
+                        string fusionFixCfgPath = Directory.GetFiles(dialog.FileName, "GTAIV.EFLC.FusionFix.cfg", SearchOption.AllDirectories).FirstOrDefault();
+                        string zolikaPatchPath = Directory.GetFiles(dialog.FileName, "ZolikaPatch.asi", SearchOption.AllDirectories).FirstOrDefault();
                         
                         switch (!string.IsNullOrEmpty(fusionFixPath), !string.IsNullOrEmpty(zolikaPatchPath))
                         {
