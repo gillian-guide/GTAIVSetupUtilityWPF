@@ -20,14 +20,16 @@ namespace GTAIVSetupUtilityWPF
     {
 
         (int, int, bool, bool, bool, bool) resultvk;
-        int installdxvk = 0;
-        bool dxvkonigpu;
+        int installdxvk;
         int vram1;
         int vram2;
-        string iniModify;
-        string ziniModify;
         bool ffix;
         bool isretail;
+        bool isIVSDKInstalled;
+        bool dxvkonigpu;
+        string rtssconfig = File.Exists("C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\GTAIV.exe.cfg") ? "C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\GTAIV.exe.cfg" : File.Exists("C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\Global") ? "C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\Global" : string.Empty;
+        string iniModify;
+        string ziniModify;
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
@@ -175,14 +177,26 @@ namespace GTAIVSetupUtilityWPF
                         directorytxt.Text = "Game Directory:";
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
+
+                        isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault()!=null;
+                        bool isDXVKInstalled = File.Exists($"{dialog.FileName}\\d3d9.dll");
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
                             { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
                         else
                         {
-                            if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
+                            if (isDXVKInstalled)
                             {
                                 Logger.Debug(" Detected d3d9.dll - likely DXVK is already installed.");
                                 installdxvkbtn.Content = "Reinstall DXVK";
+                                if (isIVSDKInstalled && !string.IsNullOrEmpty(rtssconfig))
+                                {
+                                    IniParser rtssGTAIVConfig = new IniParser(rtssconfig);
+                                    if (rtssGTAIVConfig.ReadValue("Hooking", "EnableHooking") == "1")
+                                    {
+                                        Logger.Info(" User has DXVK and IVSDK .NET and RTSS enabled at the same time. Showing the warning prompt.");
+                                        MessageBox.Show($"You currently have RivaTuner Statistics Server enabled (it might be a part of MSI Afterburner).\n\nTo avoid issues with the game launching when DXVK and IVSDK .NET are both installed, go into your tray icons, press on the little monitor icon with the number 60, press 'Add' in bottom left, select GTA IV's executable and set Application detection level to 'None'.\n\nIf you want the statistics, set it to Low and restart the tool, with the game running.");
+                                    }
+                                }
                             }
                             else
                             {
@@ -254,6 +268,15 @@ namespace GTAIVSetupUtilityWPF
             Logger.Debug(" User clicked on the Install DXVK button.");
             dxvkPanel.IsEnabled = false;
             installdxvkbtn.Content = "Installing...";
+            if (isIVSDKInstalled && !string.IsNullOrEmpty(rtssconfig))
+            {
+                IniParser rtssGTAIVConfig = new IniParser(rtssconfig);
+                if (rtssGTAIVConfig.ReadValue("Hooking", "EnableHooking") == "1")
+                {
+                    Logger.Info(" User has IVSDK .NET installed and RTSS enabled at the same time and wants to install DXVK. Showing the warning prompt.");
+                    MessageBox.Show($"You currently have RivaTuner Statistics Server enabled (it might be a part of MSI Afterburner).\n\nTo avoid issues with the game launching when DXVK and IVSDK .NET are both installed, go into your tray icons, press on the little monitor icon with the number 60, press 'Add' in bottom left, select GTA IV's executable and set Application detection level to 'None'.\n\nIf you want the statistics, set it to Low and restart the tool, with the game running.");
+                }
+            }
             int dgpu_dxvk_support = resultvk.Item1;
             int igpu_dxvk_support = resultvk.Item2;
             bool igpuonly = resultvk.Item3;
@@ -501,7 +524,7 @@ namespace GTAIVSetupUtilityWPF
                     if (borderlessWindowedValue == "0")
                     {
                         Logger.Debug(" Borderless Windowed is disabled in the ini, enabling it back...");
-                        if (ffix == true)
+                        if (ffix)
                         {
                             iniParser.EditValue("MAIN", "BorderlessWindowed", "1");
                         }
@@ -527,29 +550,6 @@ namespace GTAIVSetupUtilityWPF
                     }
                     iniParser.SaveFile();
                 }
-
-                /* Old parser, kept incase I'll need to revert it.
-                var parser = new FileIniDataParser();
-                IniData data = parser.ReadFile(iniModify);
-                if (zpatch)
-                {
-                    if (data["Options"]["BorderlessWindowed"] != "1")
-                    {
-                        data["Options"]["BorderlessWindowed"] = "1";
-                        parser.WriteFile(iniModify, data);
-                        Logger.Debug(" Set up Borderless Windowed for ZolikaPatch.");
-                    }
-                }
-                else
-                {
-                    if (data["MAIN"]["BorderlessWindowed"] != "1")
-                    {
-                        data["MAIN"]["BorderlessWindowed"] = "1";
-                        parser.WriteFile(iniModify, data);
-                        Logger.Debug(" Set up Borderless Windowed for FusionFix.");
-                    }
-                }
-                */
             }
             if (vidmemcheck.IsChecked == true)
             {
