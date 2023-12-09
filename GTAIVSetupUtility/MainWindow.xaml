@@ -5,7 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GTAIVSetupUtilityWPF"
         mc:Ignorable="d"
-    Title="Gillian's GTA IV Setup Utility" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterScreen" Icon="/Assets/ivlogo.png" ResizeMode="NoResize">
+        Title="Gillian's GTA IV Setup Utility"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/ivlogo.png"
+        ResizeMode="NoResize">
     <Grid>
         <Grid Name="Overlay" Background="Black" Opacity="0.9" Visibility="Visible" Panel.ZIndex="1">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="White">Please wait for vulkaninfo to procceed...</TextBlock>

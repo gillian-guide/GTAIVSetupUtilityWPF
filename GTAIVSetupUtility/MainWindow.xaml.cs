@@ -36,6 +36,13 @@ namespace GTAIVSetupUtilityWPF
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
+        [STAThread]
+        public static void Main()
+        {
+            Application app = new Application();
+            MainWindow mainWindow = new MainWindow();
+            app.Run(mainWindow);
+        }
         public MainWindow()
         {
             if ( File.Exists("GTAIVSetupUtilityLog.txt")) { File.Delete("GTAIVSetupUtilityLog.txt"); }
