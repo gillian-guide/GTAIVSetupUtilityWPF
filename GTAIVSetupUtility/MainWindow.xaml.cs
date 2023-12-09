@@ -177,11 +177,11 @@ namespace GTAIVSetupUtilityWPF
                 if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     Logger.Debug(" User selected a folder, proceeding...");
-                    if (CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
+                    if (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
                     {
-                        if (CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
+                        if (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
                         else { isretail = false; Logger.Debug(" Folder contains an exe of Steam Version."); }
-                        if (isretail && !CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
+                        if (isretail && !AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
                         { vidmemcheck.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
 
                         directorytxt.Text = "Game Directory:";
@@ -200,7 +200,7 @@ namespace GTAIVSetupUtilityWPF
                                 installdxvkbtn.Content = "Reinstall DXVK";
                                 if (isIVSDKInstalled && !string.IsNullOrEmpty(rtssconfig))
                                 {
-                                    IniParser rtssGTAIVConfig = new IniParser(rtssconfig);
+                                    IniEditor rtssGTAIVConfig = new IniEditor(rtssconfig);
                                     if (rtssGTAIVConfig.ReadValue("Hooking", "EnableHooking") == "1")
                                     {
                                         Logger.Info(" User has DXVK and IVSDK .NET and RTSS enabled at the same time. Showing the warning prompt.");
@@ -243,7 +243,7 @@ namespace GTAIVSetupUtilityWPF
                                 iniModify = fusionFixCfgPath;
                                 ziniModify = zolikaPatchPath;
                                 ffix = true;
-                                IniParser iniParser = new IniParser(ziniModify);
+                                IniEditor iniParser = new IniEditor(ziniModify);
                                 iniParser.EditValue("Options", "BuildingAlphaFix", "0");
                                 iniParser.EditValue("Options", "EmissiveLerpFix", "0");
                                 iniParser.EditValue("Options", "BorderlessWindowed", "0");
@@ -280,7 +280,7 @@ namespace GTAIVSetupUtilityWPF
             installdxvkbtn.Content = "Installing...";
             if (isIVSDKInstalled && !string.IsNullOrEmpty(rtssconfig))
             {
-                IniParser rtssGTAIVConfig = new IniParser(rtssconfig);
+                IniEditor rtssGTAIVConfig = new IniEditor(rtssconfig);
                 if (rtssGTAIVConfig.ReadValue("Hooking", "EnableHooking") == "1")
                 {
                     Logger.Info(" User has IVSDK .NET installed and RTSS enabled at the same time and wants to install DXVK. Showing the warning prompt.");
@@ -518,7 +518,7 @@ namespace GTAIVSetupUtilityWPF
             {
                 Logger.Debug(" Setting up Borderless Windowed...");
 
-                IniParser iniParser = new IniParser(iniModify);
+                IniEditor iniParser = new IniEditor(iniModify);
                 string borderlessWindowedValue;
                 if (ffix)
                 {

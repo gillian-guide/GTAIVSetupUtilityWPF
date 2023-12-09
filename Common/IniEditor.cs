@@ -6,12 +6,12 @@ using System.IO;
 
 namespace GTAIVSetupUtilityWPF.Common
 {
-    public class IniParser
+    public class IniEditor
     {
         private readonly Dictionary<string, Dictionary<string, string>> iniData = new Dictionary<string, Dictionary<string, string>>();
         private string FilePath { get; }
 
-        public IniParser(string filePath)
+        public IniEditor(string filePath)
         {
             FilePath = filePath;
             OpenFile();

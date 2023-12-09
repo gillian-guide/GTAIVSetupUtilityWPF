@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace GTAIVSetupUtilityWPF.Common
 {
-    public static class CheckVersion
+    public static class AppVersionGrabber
     {
         public static string GetFileVersion(string filePath)
         {

@@ -50,7 +50,7 @@
                 <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" VerticalAlignment="Bottom"><Hyperlink NavigateUri="https://gillian-guide.github.io/" RequestNavigate="Hyperlink_RequestNavigate">Visit my Guide for more info and optimal graphics settings</Hyperlink></TextBlock>
                 <TextBlock HorizontalAlignment="Right" Margin="69,0,0,0" TextWrapping="Wrap" VerticalAlignment="Bottom"><Hyperlink NavigateUri="https://github.com/SandeMC/GTAIVSetupUtilityWPF" RequestNavigate="Hyperlink_RequestNavigate">This tool is open source</Hyperlink></TextBlock>
                 <Button x:Name="aboutButton" Margin="3,0,0,0" Width="20" HorizontalAlignment="Right" Click="aboutButton_Click">
-                    <Image Source="Assets/about.png"></Image>
+                    <Image Source="../Assets/about.png"></Image>
                 </Button>
             </StackPanel>
         </StackPanel>
