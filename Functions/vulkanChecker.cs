@@ -6,16 +6,16 @@ using System.Windows;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 // this code accounts for ALL gpu's in the system and tries to work out the best conditions for installing DXVK
 // so please don't strip the functionality
-namespace GTAIVSetupUtilityWPF
+namespace GTAIVSetupUtilityWPF.Functions
 {
-    public class vulkanChecker
+    public static class VulkanChecker
     {
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         static double ConvertApiVersion(uint apiversion)
         {
             uint major = apiversion >> 22;
-            uint minor = (apiversion >> 12) & 0x3ff;
+            uint minor = apiversion >> 12 & 0x3ff;
             return double.Parse($"{major},{minor}");
         }
 

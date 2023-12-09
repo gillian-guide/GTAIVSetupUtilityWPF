@@ -4,11 +4,11 @@ using System.IO;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 // i couldn't find a good ini parser for my needs so i just begged chatgpt for one tbh, idk if it works for anything else but i'd rather not qusetion it
 
-namespace GTAIVSetupUtilityWPF
+namespace GTAIVSetupUtilityWPF.Common
 {
     public class IniParser
     {
-        private Dictionary<string, Dictionary<string, string>> iniData = new Dictionary<string, Dictionary<string, string>>();
+        private readonly Dictionary<string, Dictionary<string, string>> iniData = new Dictionary<string, Dictionary<string, string>>();
         private string FilePath { get; }
 
         public IniParser(string filePath)
@@ -50,7 +50,7 @@ namespace GTAIVSetupUtilityWPF
                             // Preserve non-key-value lines, like comments or empty lines
                             if (!iniData[currentGroup].ContainsKey(trimmedLine))
                             {
-                                iniData[currentGroup][trimmedLine] = null;
+                                iniData[currentGroup][trimmedLine] = null!;
                             }
                         }
                     }

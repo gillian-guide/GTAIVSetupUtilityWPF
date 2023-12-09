@@ -12,6 +12,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
+using GTAIVSetupUtilityWPF.Common;
+using GTAIVSetupUtilityWPF.Functions;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -27,6 +29,7 @@ namespace GTAIVSetupUtilityWPF
         bool isretail;
         bool isIVSDKInstalled;
         bool dxvkonigpu;
+        bool firstgpu = true;
         string rtssconfig = File.Exists("C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\GTAIV.exe.cfg") ? "C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\GTAIV.exe.cfg" : File.Exists("C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\Global") ? "C:\\Program Files (x86)\\RivaTuner Statistics Server\\Profiles\\Global" : string.Empty;
         string iniModify;
         string ziniModify;
@@ -46,10 +49,10 @@ namespace GTAIVSetupUtilityWPF
             VKCheck();
         }
 
-        async private void VKCheck()
+        private void VKCheck()
         {
             Logger.Info(" Initializing the vulkan check...");
-            resultvk = vulkanChecker.VulkanCheck();
+            resultvk = VulkanChecker.VulkanCheck();
             Logger.Info(" Vulkan check finished!");
             if (resultvk.Item6 && resultvk.Item1 == 2) { asynccheckbox.IsChecked = false; Logger.Debug($" User has an NVIDIA GPU, untoggling the async checkbox..."); }
             Overlay.Visibility = Visibility.Collapsed;
@@ -167,11 +170,11 @@ namespace GTAIVSetupUtilityWPF
                 if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     Logger.Debug(" User selected a folder, proceeding...");
-                    if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
+                    if (CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
                     {
-                        if (checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
+                        if (CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
                         else { isretail = false; Logger.Debug(" Folder contains an exe of Steam Version."); }
-                        if (isretail == true && !checkVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
+                        if (isretail && !CheckVersion.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
                         { vidmemcheck.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
 
                         directorytxt.Text = "Game Directory:";
@@ -421,7 +424,7 @@ namespace GTAIVSetupUtilityWPF
                         firstResponse.EnsureSuccessStatusCode();
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
                         MessageBox.Show($"DXVK-async 1.10.3 has been installed!");
                         Logger.Info(" DXVK-async 1.10.3 has been installed!");
                     }
@@ -432,7 +435,7 @@ namespace GTAIVSetupUtilityWPF
                         firstResponse.EnsureSuccessStatusCode();
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
                         MessageBox.Show($"DXVK 1.10.3 has been installed!");
                         Logger.Info(" DXVK 1.10.3 has been installed!");
                     }
@@ -447,7 +450,7 @@ namespace GTAIVSetupUtilityWPF
                         firstResponse.EnsureSuccessStatusCode();
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
                         MessageBox.Show($"Latest DXVK-gplasync has been installed!");
                         Logger.Info(" Latest DXVK-gplasync has been installed!");
                     }
@@ -458,7 +461,7 @@ namespace GTAIVSetupUtilityWPF
                         firstResponse.EnsureSuccessStatusCode();
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
                         MessageBox.Show($"Latest DXVK has been installed!");
                         Logger.Info(" Latest DXVK has been installed!");
                     }
@@ -472,7 +475,7 @@ namespace GTAIVSetupUtilityWPF
                         firstResponse.EnsureSuccessStatusCode();
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
                         MessageBox.Show($"DXVK-async 1.10.1 has been installed!");
                         Logger.Info(" DXVK-async 1.10.1 has been installed!");
                     }
@@ -483,7 +486,7 @@ namespace GTAIVSetupUtilityWPF
                         firstResponse.EnsureSuccessStatusCode();
                         var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
                         var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl, gamedirectory.Text, dxvkconf);
+                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
                         MessageBox.Show($"DXVK 1.10.1 has been installed!", "Information");
                         Logger.Info(" DXVK 1.10.1 has been installed!");
                     }
@@ -510,7 +513,7 @@ namespace GTAIVSetupUtilityWPF
 
                 IniParser iniParser = new IniParser(iniModify);
                 string borderlessWindowedValue;
-                if (ffix == true)
+                if (ffix)
                 {
                     borderlessWindowedValue = iniParser.ReadValue("MAIN", "BorderlessWindowed");
                 }
@@ -540,7 +543,7 @@ namespace GTAIVSetupUtilityWPF
                 else if (windowedcheck.IsChecked == false && borderlessWindowedValue == "1")
                 {
                     Logger.Debug(" User chose to disable Borderless Windowed but it's enabled in the ini, disabling it...");
-                    if (ffix == true)
+                    if (ffix)
                     {
                         iniParser.EditValue("MAIN", "BorderlessWindowed", "0");
                     }
@@ -555,21 +558,22 @@ namespace GTAIVSetupUtilityWPF
             {
                 Logger.Debug(" -availablevidmem checked, quering user's VRAM...");
                 ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-                foreach (ManagementObject obj in searcher.Get())
+                foreach (var tempvram in from ManagementObject obj in searcher.Get()
+                                         let adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A"
+                                         let tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1)
+                                         select tempvram)
                 {
-                    string adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A";
-                    int tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1);
-                    bool h = false;
-                    if (!h)
+                    if (firstgpu)
                     {
                         vram1 = tempvram;
-                        h = true;
+                        firstgpu = false;
                     }
                     else if (tempvram > vram1 || tempvram > vram2)
                     {
                         vram2 = tempvram;
                     }
                 }
+
                 if (resultvk.Item3 || resultvk.Item4)
                 {
                     if (vram1 > 3072) vram1 = 3072;
@@ -602,7 +606,7 @@ namespace GTAIVSetupUtilityWPF
                 launchoptions.Add($"-refreshrate {refreshRate}");
                 Logger.Debug($" Added -width {width}, -height {height}, -refreshrate {refreshRate}.");
             }
-            if (isretail == true)
+            if (isretail)
             {
                 Logger.Debug(" Game .exe is retail - inputting values via commandline.txt...");
                 if (File.Exists($"{gamedirectory.Text}\\commandline.txt"))
