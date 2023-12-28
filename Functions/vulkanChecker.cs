@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -12,11 +13,11 @@ namespace GTAIVSetupUtilityWPF.Functions
     {
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-        static double ConvertApiVersion(uint apiversion)
+        static (int, int) ConvertApiVersion(uint apiversion)
         {
             uint major = apiversion >> 22;
             uint minor = apiversion >> 12 & 0x3ff;
-            return double.Parse($"{major},{minor}");
+            return (Convert.ToInt32(major), Convert.ToInt32(minor));
         }
 
         public static (int, int, bool, bool, bool, bool) VulkanCheck()
@@ -106,9 +107,11 @@ namespace GTAIVSetupUtilityWPF.Functions
                             JsonElement capabilities = h.GetProperty("device");
                             string deviceName = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceName").GetString();
                             uint apiVersion = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("apiVersion").GetUInt32();
-                            double vulkanVer = ConvertApiVersion(apiVersion);
+                            (int, int) vulkanVer = ConvertApiVersion(apiVersion);
+                            int vulkanVerMajor = vulkanVer.Item1;
+                            int vulkanVerMinor = vulkanVer.Item2;
 
-                            Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVer}");
+                            Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
                             if (deviceName.Contains("NVIDIA"))
                             {
                                 Logger.Info($" GPU{x} is an NVIDIA GPU.");
@@ -134,11 +137,11 @@ namespace GTAIVSetupUtilityWPF.Functions
                             catch
                             {
                                 Logger.Debug($" Catched an exception, this means GPU{x} doesn't support DXVK 2.x, checking other versions...");
-                                if (vulkanVer < 1.1)
+                                if (vulkanVerMajor <= 1 && vulkanVerMinor == 1)
                                 {
-                                    Logger.Info($" GPU{x} doesn't support DXVK or has  outdated drivers.");
+                                    Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
                                 }
-                                else if (vulkanVer > 1.1 && vulkanVer < 1.3)
+                                else if (vulkanVerMajor == 1 && vulkanVerMinor < 3)
                                 {
                                     Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
                                     dxvkSupport = 1;
