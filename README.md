@@ -1,5 +1,5 @@
 # Gillian's GTA IV Setup Utility
-Semi-automatically installs DXVK and launch options for your GTA IV installation. It automatically checks your hardware and what options should be available (aswell as setting defaults).
+Semi-automatically installs DXVK and launch options for your GTA IV installation (+extra). It automatically checks your hardware and what options should be available (aswell as setting defaults).
 
 ![image](https://github.com/SandeMC/GTAIVSetupUtilityWPF/assets/70141395/cab280f8-8045-4378-b275-ec139eb7cec2)
 
