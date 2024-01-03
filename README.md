@@ -1,7 +1,7 @@
 # Gillian's GTA IV Setup Utility
 Semi-automatically installs DXVK and launch options for your GTA IV installation (+extra). It automatically checks your hardware and what options should be available (aswell as setting defaults).
 
-![image](https://github.com/SandeMC/GTAIVSetupUtilityWPF/assets/70141395/cab280f8-8045-4378-b275-ec139eb7cec2)
+![image](https://github.com/gillian-guide/GTAIVSetupUtilityWPF/assets/70141395/6d52f3bb-006d-409c-a3c3-3c4144e1f28d)
 
 This version is a re-write of the now-deprecated [Python version](https://github.com/SandeMC/GTAIVSetupUtility).
 
