@@ -53,16 +53,11 @@ namespace GTAIVSetupUtilityWPF
             Logger.Info(" Initializing the main window...");
             InitializeComponent();
             Logger.Info(" Main window initialized!");
-            VKCheck();
-        }
 
-        private void VKCheck()
-        {
             Logger.Info(" Initializing the vulkan check...");
             resultvk = VulkanChecker.VulkanCheck();
             Logger.Info(" Vulkan check finished!");
             if (resultvk.Item6 && resultvk.Item1 == 2) { asynccheckbox.IsChecked = false; Logger.Debug($" User has an NVIDIA GPU, untoggling the async checkbox..."); }
-            Overlay.Visibility = Visibility.Collapsed;
         }
 
 
@@ -93,7 +88,6 @@ namespace GTAIVSetupUtilityWPF
                 Logger.Debug(" Displaying a tip...");
                 MessageBox.Show("The in-game VSync implementation produces framepacing issues. DXVK's VSync implementation should be preferred.\n\nIt's recommended to keep this on and in-game's implementation off.");
             }
-
         }
         private void latency_Click(object sender, RoutedEventArgs e)
         {
@@ -113,13 +107,14 @@ namespace GTAIVSetupUtilityWPF
                 MessageBox.Show("This option allows you to set any in-game settings independently of what the game restricts you to. It's recommended to keep this on. ");
             }
         }
-        private void managed_Click(object sender, RoutedEventArgs e)
+
+        private void nomemrestrict_Click(object sender, RoutedEventArgs e)
         {
-            Logger.Debug(" User toggled -managed or -nomemrestrict.");
+            Logger.Debug(" User toggled -nomemrestrict.");
             if (tipscheck.IsChecked == true)
             {
                 Logger.Debug(" Displaying a tip...");
-                MessageBox.Show("-managed may improve performance when using DXVK, but it's not compatible with -nomemrestrict. It's recommended to choose -nomemrestrict that allows the game to use all the memory resources up to it's limits.");
+                MessageBox.Show("-nomemrestrict that allows the game to use all the memory resources up to it's limits. It's recommended to keep this on.");
             }
         }
         private void windowed_Click(object sender, RoutedEventArgs e)
@@ -133,10 +128,30 @@ namespace GTAIVSetupUtilityWPF
         private void vidmem_Click(object sender, RoutedEventArgs e)
         {
             Logger.Debug(" User toggled -availablevidmem.");
+            if (vidmemcheck.IsChecked == false)
+            {
+                gb3check.IsEnabled = false;
+                gb4check.IsEnabled = false;
+            }
+            else
+            {
+                gb3check.IsEnabled = true;
+                gb4check.IsEnabled = true;
+            }
             if (tipscheck.IsChecked == true)
             {
                 Logger.Debug(" Displaying a tip...");
-                MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. Due to weird issues that occur from the game using more than 3GB, the toggle only sets the value to 3GB. You can manually change the lock to 4GB or higher, but there's little gain to doing that. It's recommended to keep this at default.");
+                MessageBox.Show("This option forces a specific value of video memory due to the game not being able to do so automatically sometimes. It's recommended to keep this at default.");
+            }
+        }
+
+        private void vidmemlock_Click(object sender, RoutedEventArgs e)
+        {
+            Logger.Debug(" User changed the vidmem lock");
+            if (tipscheck.IsChecked == true)
+            {
+                Logger.Debug(" Displaying a tip...");
+                MessageBox.Show("This option allows to change between a 3GB and a 4GB VRAM lock when setting -availablevidmem up.\n\nThe game is 32-bit, so going beyond 4GB is entirely pointless. However, some people reported less issues with it being locked to 3GB instead.\n\nIt's recommended to keep this at default.");
             }
         }
         private void monitordetail_Click(object sender, RoutedEventArgs e)
@@ -273,6 +288,36 @@ namespace GTAIVSetupUtilityWPF
             }
         }
 
+        private async void downloaddxvk(string link, List<string> dxvkconf, bool gitlab, bool githubalt)
+        {
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Other");
+            var firstResponse = await httpClient.GetAsync(link);
+            firstResponse.EnsureSuccessStatusCode();
+            var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
+            var parsed = JsonDocument.Parse(firstResponseBody).RootElement;
+            string downloadUrl = null;
+            switch (gitlab, githubalt)
+            {
+                case (false, false):
+                {
+                    downloadUrl = parsed.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
+                    break;
+                }
+                case (true, false):
+                {
+                    downloadUrl = parsed[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
+                    break;
+                }
+                case (false, true):
+                {
+                    downloadUrl = parsed.GetProperty("browser_download_url").GetString();
+                    break;
+                }
+
+            }
+            DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+        }
         private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
         {
             Logger.Debug(" User clicked on the Install DXVK button.");
@@ -416,9 +461,6 @@ namespace GTAIVSetupUtilityWPF
 
             Logger.Debug(" Quering links to install DXVK...");
 
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Other");
-
             switch (installdxvk)
             {
                 case 1:
@@ -427,22 +469,14 @@ namespace GTAIVSetupUtilityWPF
                     {
                         Logger.Info(" Installing DXVK-async 1.10.3...");
                         dxvkconf.Add("dxvk.enableAsync = true");
-                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231");
-                        firstResponse.EnsureSuccessStatusCode();
-                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
-                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+                        downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231", dxvkconf, false, true);
                         MessageBox.Show($"DXVK-async 1.10.3 has been installed!");
                         Logger.Info(" DXVK-async 1.10.3 has been installed!");
                     }
                     else
                     {
                         Logger.Info(" Installing DXVK 1.10.3...");
-                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736");
-                        firstResponse.EnsureSuccessStatusCode();
-                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
-                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736", dxvkconf, false, true);
                         MessageBox.Show($"DXVK 1.10.3 has been installed!");
                         Logger.Info(" DXVK 1.10.3 has been installed!");
                     }
@@ -453,22 +487,14 @@ namespace GTAIVSetupUtilityWPF
                         Logger.Info(" Installing Latest DXVK-gplasync...");
                         dxvkconf.Add("dxvk.enableAsync = true");
                         dxvkconf.Add("dxvk.gplAsyncCache = true");
-                        var firstResponse = await httpClient.GetAsync("https://gitlab.com/api/v4/projects/43488626/releases/");
-                        firstResponse.EnsureSuccessStatusCode();
-                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
-                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+                        downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/", dxvkconf, true, false);
                         MessageBox.Show($"Latest DXVK-gplasync has been installed!");
                         Logger.Info(" Latest DXVK-gplasync has been installed!");
                     }
                     else
                     {
                         Logger.Info(" Installing Latest DXVK...");
-                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/doitsujin/dxvk/releases/latest");
-                        firstResponse.EnsureSuccessStatusCode();
-                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
-                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/latest", dxvkconf, false, false);
                         MessageBox.Show($"Latest DXVK has been installed!");
                         Logger.Info(" Latest DXVK has been installed!");
                     }
@@ -478,22 +504,14 @@ namespace GTAIVSetupUtilityWPF
                     {
                         Logger.Info(" Installing DXVK-async 1.10.1...");
                         dxvkconf.Add("dxvk.enableAsync = true");
-                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/60677007");
-                        firstResponse.EnsureSuccessStatusCode();
-                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
-                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+                        downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/60677007", dxvkconf, false, true);
                         MessageBox.Show($"DXVK-async 1.10.1 has been installed!");
                         Logger.Info(" DXVK-async 1.10.1 has been installed!");
                     }
                     else
                     {
                         Logger.Info(" Installing DXVK 1.10.1...");
-                        var firstResponse = await httpClient.GetAsync("https://api.github.com/repos/doitsujin/dxvk/releases/assets/60669426");
-                        firstResponse.EnsureSuccessStatusCode();
-                        var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
-                        var downloadUrl = JsonDocument.Parse(firstResponseBody).RootElement.GetProperty("browser_download_url").GetString();
-                        DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/60669426", dxvkconf, false, true);
                         MessageBox.Show($"DXVK 1.10.1 has been installed!", "Information");
                         Logger.Info(" DXVK 1.10.1 has been installed!");
                     }
@@ -513,7 +531,6 @@ namespace GTAIVSetupUtilityWPF
             List<string> launchoptions = new List<string> { };
             if (norestrictionscheck.IsChecked == true) { launchoptions.Add("-norestrictions"); Logger.Debug(" Added -norestrictions."); }
             if (nomemrestrictcheck.IsChecked == true) { launchoptions.Add("-nomemrestrict"); Logger.Debug(" Added -nomemrestrict."); }
-            else if (managedcheck.IsChecked == true) { launchoptions.Add("-managed"); Logger.Debug(" Added -managed."); }
             if (windowedcheck.IsEnabled)
             {
                 Logger.Debug(" Setting up Borderless Windowed...");
@@ -583,7 +600,14 @@ namespace GTAIVSetupUtilityWPF
 
                 if (resultvk.Item3 || resultvk.Item4)
                 {
-                    if (vram1 > 3072) vram1 = 3072;
+                    if (gb3check.IsChecked == true)
+                    {
+                        if (vram1 > 3072) vram1 = 3072;
+                    }
+                    else
+                    {
+                        if (vram1 > 4096) vram1 = 4096;
+                    }
                     launchoptions.Add($"-availablevidmem {vram1}");
                     Logger.Debug($" Added -availablevidmem {vram1}.");
                 }
@@ -598,7 +622,14 @@ namespace GTAIVSetupUtilityWPF
                     {
                         vram = Math.Min(vram1, vram2);
                     }
-                    if (vram > 3072) vram = 3072;
+                    if (gb3check.IsChecked == true)
+                    {
+                        if (vram > 3072) vram = 3072;
+                    }
+                    else
+                    {
+                        if (vram > 4096) vram = 4096;
+                    }
                     launchoptions.Add($"-availablevidmem {vram}");
                     Logger.Debug($" Added -availablevidmem {vram}.");
                 }
@@ -630,12 +661,12 @@ namespace GTAIVSetupUtilityWPF
                     }
                 }
                 Logger.Info($" Following launch options have been set to commandline.txt: {string.Join(" ", launchoptions)}");
-                MessageBox.Show($"Following launch options have been set up automatically for you: \n\n{string.Join(" ", launchoptions)}\n\nDo not worry that the game only detects 3072MB of VRAM - that is intentional and you can change that if you need to.");
+                MessageBox.Show($"Following launch options have been set up automatically for you: \n\n{string.Join(" ", launchoptions)}\n\nDo not worry that VRAM value isn't your full value - that is intentional and you can change that if you need to.");
             }
             else
             {
                 Logger.Info($" Game .exe is 1.2 or later - asked user to input the values on their own and copied them to clipboard: {string.Join(" ", launchoptions)}");
-                MessageBox.Show($" The app can't set the launch options automatically, paste them in Steam's Launch Options manually (will be copied to clipboard after you press Ok):\n\n{string.Join(" ", launchoptions)}\n\nDo not worry that the game only detects 3072MB of VRAM - that is intentional and you can change that if you need to.");
+                MessageBox.Show($" The app can't set the launch options automatically, paste them in Steam's Launch Options manually (will be copied to clipboard after you press Ok):\n\n{string.Join(" ", launchoptions)}\n\nDo not worry that VRAM value isn't your full value - that is intentional and you can change that if you need to.");
                 try { Clipboard.SetText(string.Join(" ", launchoptions)); } catch (Exception ex) { MessageBox.Show($" The app couldn't copy the options to clipboard - input them manually:\n\n{string.Join(" ", launchoptions)}"); Logger.Debug(ex, " Weird issues with clipboard access."); }
             }
 

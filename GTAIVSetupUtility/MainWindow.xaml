@@ -11,9 +11,6 @@
         Icon="/Assets/ivlogo.png"
         ResizeMode="NoResize">
     <Grid>
-        <Grid Name="Overlay" Background="Black" Opacity="0.9" Visibility="Visible" Panel.ZIndex="1">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="White">Please wait for vulkaninfo to procceed...</TextBlock>
-        </Grid>
         <StackPanel Margin="5,5,5,5" Grid.ColumnSpan="2">
             <TextBlock Margin="0,0,0,0" FontSize="28" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
             <TextBlock x:Name="directorytxt" HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="Wrap" Text="Set your game directory before using:" VerticalAlignment="Top"/>
@@ -33,14 +30,18 @@
                     <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click"/>
                 </StackPanel>
                 <StackPanel x:Name="launchoptionsPanel" IsEnabled="False" Margin="5,0,0,0">
-                    <CheckBox Content="-norestrictions" x:Name="norestrictionscheck" HorizontalAlignment="Left" Margin="0,0,0,0" IsChecked="True" Click="norestrictions_Click"/>
-                    <StackPanel Orientation="Horizontal">
-                        <RadioButton Content="-nomemrestrict" x:Name="nomemrestrictcheck" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="managed_Click"/>
-                        <RadioButton Content="-managed" x:Name="managedcheck" HorizontalAlignment="Left" Margin="5,5,0,0" Click="managed_Click"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                        <CheckBox Content="-norestrictions" x:Name="norestrictionscheck" HorizontalAlignment="Left" IsChecked="True" Click="norestrictions_Click"/>
+                        <CheckBox Content="-nomemrestrict" x:Name="nomemrestrictcheck" HorizontalAlignment="Left" Margin="5,0,0,0"  IsChecked="True" Click="nomemrestrict_Click"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                        <CheckBox Content="-availablevidmem" x:Name="vidmemcheck" HorizontalAlignment="Left" IsChecked="True" Click="vidmem_Click"/>
+                        <TextBlock Margin="5,-1,0,0" FontSize="12" TextWrapping="Wrap" HorizontalAlignment="Center">locked to: </TextBlock>
+                        <RadioButton Content="3GB" x:Name="gb3check" HorizontalAlignment="Left" Margin="5,0,0,0" IsChecked="True" Click="vidmemlock_Click"/>
+                        <RadioButton Content="4GB" x:Name="gb4check" HorizontalAlignment="Left" Margin="5,0,0,0" IsChecked="False" Click="vidmemlock_Click"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal"  Margin="0,5,0,0">
                         <CheckBox Content="Borderless Windowed" x:Name="windowedcheck" HorizontalAlignment="Left" IsChecked="True" Click="windowed_Click"/>
-                        <CheckBox Content="-availablevidmem" x:Name="vidmemcheck" HorizontalAlignment="Left" Margin="5,0,0,0" IsChecked="False" Click="vidmem_Click"/>
                         <CheckBox Content="Monitor Details" x:Name="monitordetailcheck" HorizontalAlignment="Left" Margin="5,0,0,0" IsChecked="False" Click="monitordetail_Click"/>
                     </StackPanel>
                     <Button Content="Setup launch options" x:Name="launchoptionsbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="361" Height="25" Click="setuplaunchoptions_Click"/>
