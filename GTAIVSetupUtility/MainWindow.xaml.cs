@@ -198,7 +198,7 @@ namespace GTAIVSetupUtilityWPF
                         if (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
                         else { isretail = false; Logger.Debug(" Folder contains an exe of Steam Version."); }
                         if (isretail && !AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
-                        { vidmemcheck.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
+                        { vidmemcheck.IsEnabled = false; gb3check.IsEnabled = false; gb4check.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
 
                         directorytxt.Text = "Game Directory:";
                         gamedirectory.Text = dialog.FileName;
