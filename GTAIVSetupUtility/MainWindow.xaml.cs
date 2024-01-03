@@ -114,7 +114,7 @@ namespace GTAIVSetupUtilityWPF
             if (tipscheck.IsChecked == true)
             {
                 Logger.Debug(" Displaying a tip...");
-                MessageBox.Show("-nomemrestrict that allows the game to use all the memory resources up to it's limits. It's recommended to keep this on.");
+                MessageBox.Show("-nomemrestrict allows the game to use all the dedicated memory resources up to the limits. It's recommended to keep this on.");
             }
         }
         private void windowed_Click(object sender, RoutedEventArgs e)
