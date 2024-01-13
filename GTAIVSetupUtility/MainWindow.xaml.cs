@@ -262,9 +262,12 @@ namespace GTAIVSetupUtilityWPF
                                 IniEditor iniParser = new IniEditor(ziniModify);
                                 iniParser.EditValue("Options", "BuildingAlphaFix", "0");
                                 iniParser.EditValue("Options", "EmissiveLerpFix", "0");
+                                iniParser.EditValue("Options", "BikePhoneAnimsFix", "0");
                                 iniParser.EditValue("Options", "BorderlessWindowed", "0");
                                 iniParser.EditValue("Options", "CutsceneFixes", "0");
                                 iniParser.EditValue("Options", "HighFPSBikePhysicsFix", "0");
+                                iniParser.EditValue("Options", "HighFPSSpeedupFix", "0");
+                                iniParser.EditValue("Options", "ReversingLightFix", "0");
                                 iniParser.EditValue("Options", "OutOfCommissionFix", "0");
                                 iniParser.EditValue("Options", "SkipIntro", "0");
                                 iniParser.EditValue("Options", "SkipMenu", "0");
