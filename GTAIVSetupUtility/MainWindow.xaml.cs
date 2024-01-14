@@ -475,14 +475,14 @@ namespace GTAIVSetupUtilityWPF
                         dxvkconf.Add("dxvk.enableAsync = true");
                         await downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231", dxvkconf, false, true);
                         MessageBox.Show($"DXVK-async 1.10.3 has been installed!");
-                        Logger.Info(" DXVK-async 1.10.3 has been installed!");
+                        Logger.Info(" DXVK-async 1.10.3 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                     }
                     else
                     {
                         Logger.Info(" Installing DXVK 1.10.3...");
                         await downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736", dxvkconf, false, true);
                         MessageBox.Show($"DXVK 1.10.3 has been installed!");
-                        Logger.Info(" DXVK 1.10.3 has been installed!");
+                        Logger.Info(" DXVK 1.10.3 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                     }
                     break;
                 case 2:
@@ -493,14 +493,14 @@ namespace GTAIVSetupUtilityWPF
                         dxvkconf.Add("dxvk.gplAsyncCache = true");
                         await downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/", dxvkconf, true, false);
                         MessageBox.Show($"Latest DXVK-gplasync has been installed!");
-                        Logger.Info(" Latest DXVK-gplasync has been installed!");
+                        Logger.Info(" Latest DXVK-gplasync has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                     }
                     else
                     {
                         Logger.Info(" Installing Latest DXVK...");
                         await downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/latest", dxvkconf, false, false);
                         MessageBox.Show($"Latest DXVK has been installed!");
-                        Logger.Info(" Latest DXVK has been installed!");
+                        Logger.Info(" Latest DXVK has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                     }
                     break;
                 case 3:
@@ -510,14 +510,14 @@ namespace GTAIVSetupUtilityWPF
                         dxvkconf.Add("dxvk.enableAsync = true");
                         await downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/60677007", dxvkconf, false, true);
                         MessageBox.Show($"DXVK-async 1.10.1 has been installed!");
-                        Logger.Info(" DXVK-async 1.10.1 has been installed!");
+                        Logger.Info(" DXVK-async 1.10.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                     }
                     else
                     {
                         Logger.Info(" Installing DXVK 1.10.1...");
                         await downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/60669426", dxvkconf, false, true);
                         MessageBox.Show($"DXVK 1.10.1 has been installed!", "Information");
-                        Logger.Info(" DXVK 1.10.1 has been installed!");
+                        Logger.Info(" DXVK 1.10.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                     }
                     break;
             }
