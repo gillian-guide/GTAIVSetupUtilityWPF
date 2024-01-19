@@ -15,6 +15,7 @@ using System.Windows.Input;
 using GTAIVSetupUtilityWPF.Common;
 using GTAIVSetupUtilityWPF.Functions;
 using System.Threading.Tasks;
+using PromptDialog;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -540,8 +541,6 @@ namespace GTAIVSetupUtilityWPF
             if (nomemrestrictcheck.IsChecked == true) { launchoptions.Add("-nomemrestrict"); Logger.Debug(" Added -nomemrestrict."); }
             if (windowedcheck.IsEnabled)
             {
-                Logger.Debug(" Setting up Borderless Windowed...");
-
                 IniEditor iniParser = new IniEditor(iniModify);
                 string borderlessWindowedValue;
                 if (ffix)
@@ -588,57 +587,91 @@ namespace GTAIVSetupUtilityWPF
             if (vidmemcheck.IsChecked == true)
             {
                 Logger.Debug(" -availablevidmem checked, quering user's VRAM...");
-                ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-                foreach (var tempvram in from ManagementObject obj in searcher.Get()
-                                         let adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A"
-                                         let tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1)
-                                         select tempvram)
+                try
                 {
-                    if (firstgpu)
+                    ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
+                    foreach (var tempvram in from ManagementObject obj in searcher.Get()
+                                             let adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A"
+                                             let tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1)
+                                             select tempvram)
                     {
-                        vram1 = tempvram;
-                        firstgpu = false;
+                        if (firstgpu)
+                        {
+                            vram1 = tempvram;
+                            firstgpu = false;
+                        }
+                        else if (tempvram > vram1 || tempvram > vram2)
+                        {
+                            vram2 = tempvram;
+                        }
                     }
-                    else if (tempvram > vram1 || tempvram > vram2)
-                    {
-                        vram2 = tempvram;
-                    }
-                }
 
-                if (resultvk.Item3 || resultvk.Item4)
-                {
-                    if (gb3check.IsChecked == true)
+                    if (resultvk.Item3 || resultvk.Item4)
                     {
-                        if (vram1 > 3072) vram1 = 3072;
+                        if (gb3check.IsChecked == true)
+                        {
+                            if (vram1 > 3072) vram1 = 3072;
+                        }
+                        else
+                        {
+                            if (vram1 > 4096) vram1 = 4096;
+                        }
+                        launchoptions.Add($"-availablevidmem {vram1}");
+                        Logger.Debug($" Added -availablevidmem {vram1}.");
                     }
                     else
                     {
-                        if (vram1 > 4096) vram1 = 4096;
+                        int vram;
+                        if (!dxvkonigpu)
+                        {
+                            vram = Math.Max(vram1, vram2);
+                        }
+                        else
+                        {
+                            vram = Math.Min(vram1, vram2);
+                        }
+                        if (gb3check.IsChecked == true)
+                        {
+                            if (vram > 3072) vram = 3072;
+                        }
+                        else
+                        {
+                            if (vram > 4096) vram = 4096;
+                        }
+                        launchoptions.Add($"-availablevidmem {vram}");
+                        Logger.Debug($" Added -availablevidmem {vram}.");
                     }
-                    launchoptions.Add($"-availablevidmem {vram1}");
-                    Logger.Debug($" Added -availablevidmem {vram1}.");
                 }
-                else if (!resultvk.Item3 && !resultvk.Item4)
+                catch (Exception ex)
                 {
-                    int vram;
-                    if (!dxvkonigpu)
+                   // i know this is an awful and unoptimized and full of bad practices implementation, plz forgib
+                   Logger.Error(ex, "Had some weird error during quering vram; asking the user for manual input");
+                   bool noerror = false;
+                   int vram = 0;
+                   while (!noerror)
                     {
-                        vram = Math.Max(vram1, vram2);
-                    }
-                    else
-                    {
-                        vram = Math.Min(vram1, vram2);
-                    }
-                    if (gb3check.IsChecked == true)
-                    {
+                        try
+                        {
+                            vram = Convert.ToInt16(PromptDialog.Dialog.Prompt("VRAM could not be queried automatically.\n\nInput your VRAM value (in MB):", "Failsafe VRAM input"));
+                            noerror = true;
+                        }
+                        catch
+                        {
+                            Logger.Error("Didn't receive a number, requesting again");
+                            MessageBox.Show("Not a number, try again...");
+                        }
+
+                   }
+                   if (gb3check.IsChecked == true)
+                   {
                         if (vram > 3072) vram = 3072;
-                    }
-                    else
-                    {
+                   }
+                   else
+                   {
                         if (vram > 4096) vram = 4096;
-                    }
-                    launchoptions.Add($"-availablevidmem {vram}");
-                    Logger.Debug($" Added -availablevidmem {vram}.");
+                   }
+                   launchoptions.Add($"-availablevidmem {vram}");
+                   Logger.Debug($" Added -availablevidmem {vram}.");
                 }
             }
             if (monitordetailcheck.IsChecked == true)

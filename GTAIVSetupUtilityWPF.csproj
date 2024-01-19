@@ -7,7 +7,7 @@
 	<UseWPF>true</UseWPF>
 	<DebugType>embedded</DebugType>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-	<Version>1.4.3</Version>
+	<Version>1.4.4</Version>
 	<ApplicationIcon>Assets\ivlogo.ico</ApplicationIcon>
 	<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 	<Title>Gillian's GTA IV Setup Utility</Title>
@@ -32,9 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
-	<PackageReference Include="ByteSize" Version="2.1.1" />
+	<PackageReference Include="ByteSize" Version="2.1.2" />
 	<PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
-	<PackageReference Include="NLog" Version="5.2.7" />
+	<PackageReference Include="NLog" Version="5.2.8" />
+	<PackageReference Include="PromptDialog" Version="1.0.0" />
 	<PackageReference Include="SharpZipLib" Version="1.4.2" />
 	<PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
