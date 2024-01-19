@@ -201,6 +201,9 @@ namespace GTAIVSetupUtilityWPF
                         { vidmemcheck.IsEnabled = false; gb3check.IsEnabled = false; gb4check.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
 
                         directorytxt.Text = "Game Directory:";
+                        directorytxt.FontWeight = FontWeights.Normal;
+                        directorytxt.TextDecorations = null;
+                        tipsnote.TextDecorations = TextDecorations.Underline;
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
 
