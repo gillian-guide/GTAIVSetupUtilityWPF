@@ -27,7 +27,7 @@
                     <CheckBox Content="Install the async patch" x:Name="asynccheckbox" Margin="0,0,0,0" HorizontalAlignment="Left" IsChecked="True" Click="async_Click"/>
                     <CheckBox Content="Enable VSync" x:Name="vsynccheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="vsync_Click"/>
                     <CheckBox Content="Set Max Frame Latency" x:Name="framelatencycheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="latency_Click"/>
-                    <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click"/>
+                    <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click" FontWeight="SemiBold"/>
                 </StackPanel>
                 <StackPanel x:Name="launchoptionsPanel" IsEnabled="False" Margin="5,0,0,0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
@@ -44,7 +44,7 @@
                         <CheckBox Content="Borderless Windowed" x:Name="windowedcheck" HorizontalAlignment="Left" IsChecked="True" Click="windowed_Click"/>
                         <CheckBox Content="Monitor Details" x:Name="monitordetailcheck" HorizontalAlignment="Left" Margin="5,0,0,0" IsChecked="False" Click="monitordetail_Click"/>
                     </StackPanel>
-                    <Button Content="Setup launch options" x:Name="launchoptionsbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="361" Height="25" Click="setuplaunchoptions_Click"/>
+                    <Button Content="Setup launch options" x:Name="launchoptionsbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="361" Height="25" Click="setuplaunchoptions_Click" FontWeight="SemiBold"/>
                 </StackPanel>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
