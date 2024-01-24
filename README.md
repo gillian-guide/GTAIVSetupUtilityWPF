@@ -28,10 +28,11 @@ Contribution is highly welcome. I'm poorly experienced with C#, but this rewrite
 ## Attribution
 Following NuGet packages were used to create this app:
 
-- [ByteSize](https://github.com/omar/ByteSize) by Omar Khudeira - used to calculate and convert the VRAM correctly.
-- [Microsoft-WindowsAPICodePack-Shell](https://github.com/contre/Windows-API-Code-Pack-1.1) by rpastric, contre, dahall - allows to create a Choose File dialogue box.
-- [NLog](https://github.com/NLog/NLog) by Jarek Kowalski, Kim Chriestensen, Julian Verdurmen - used for logging.
-- [SharpZipLib](https://github.com/icsharpcode/SharpZipLib) by ICSharpCode - used for extracting a .tar.gz archive provided by DXVK.
+- [ByteSize](https://www.nuget.org/packages/ByteSize) by Omar Khudeira - used to calculate and convert the VRAM correctly.
+- [Microsoft-WindowsAPICodePack-Shell](https://www.nuget.org/packages/WindowsAPICodePack-Shell) by rpastric, contre, dahall - allows to create a Choose File dialogue box.
+- [NLog](https://www.nuget.org/packages/NLog) by Jarek Kowalski, Kim Chriestensen, Julian Verdurmen - used for logging.
+- [SharpZipLib](https://www.nuget.org/packages/SharpZipLib) by ICSharpCode - used for extracting a .tar.gz archive provided by DXVK.
+- [PromptDialog](https://www.nuget.org/packages/PromptDialog/) by pythonizo - used to prompt the VRAM as a failsafe, as I was too lazy to create my own WPF window for that.
 - And Microsoft's official packages such as [System.Management](https://www.nuget.org/packages/System.Management/) for convenience and functional code.
 
 And these were used during development:
