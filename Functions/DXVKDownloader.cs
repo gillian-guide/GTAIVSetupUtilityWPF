@@ -7,11 +7,7 @@ using System.Net;
 
 namespace GTAIVSetupUtilityWPF.Functions
 {
-
-    // hi here, i'm an awful coder, so please clean up for me if it really bothers you
-#pragma warning disable S101 // Types should be named in PascalCase
     public static class DXVKInstaller
-#pragma warning restore S101 // Types should be named in PascalCase
     {
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
@@ -61,6 +57,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             catch (Exception ex)
             {
                 Logger.Debug(ex, "Error installing DXVK");
+                throw;
             }
         }
     }

@@ -16,6 +16,11 @@ using GTAIVSetupUtilityWPF.Common;
 using GTAIVSetupUtilityWPF.Functions;
 using System.Threading.Tasks;
 using PromptDialog;
+using System.Net;
+using ICSharpCode.SharpZipLib.GZip;
+using ICSharpCode.SharpZipLib.Tar;
+using System.Threading;
+using System.ComponentModel;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -296,6 +301,89 @@ namespace GTAIVSetupUtilityWPF
             }
         }
 
+        bool downloadfinished = false;
+        bool extractfinished = false;
+
+        private async Task InstallDXVK(string downloadUrl)
+        {
+            try
+            {
+                Logger.Debug(" Downloading the .tar.gz...");
+                Thread thread = new Thread(() =>
+                {
+                    Logger.Debug(" Downloading the selected release...");
+                    WebClient client = new WebClient();
+                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
+                    client.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
+                    client.DownloadFileAsync(new Uri(downloadUrl), "./dxvk.tar.gz");
+                });
+                thread.Start();
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Error downloading DXVK");
+                throw;
+            }
+        }
+
+        void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)delegate
+            {
+                double bytesIn = double.Parse(e.BytesReceived.ToString());
+                double totalBytes = double.Parse(e.TotalBytesToReceive.ToString());
+                double percentage = bytesIn / totalBytes * 100;
+                int percentageInt = Convert.ToInt16(percentage);
+                installdxvkbtn.Content = $"Downloading... ({percentageInt}%)";
+            });
+        }
+
+        void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)delegate
+            {
+                Logger.Debug(" Successfully downloaded.");
+                downloadfinished = true;
+                installdxvkbtn.Content = $"Installing...";
+            });
+        }
+        private async Task ExtractDXVK(string installationDir, List<string> dxvkConf)
+        {
+
+            Logger.Debug(" Extracting the d3d9.dll from the archive...");
+            using (FileStream fsIn = new FileStream("./dxvk.tar.gz", FileMode.Open))
+            using (GZipInputStream gzipStream = new GZipInputStream(fsIn))
+            using (TarInputStream tarStream = new TarInputStream(gzipStream))
+            {
+                TarEntry entry;
+                while ((entry = tarStream.GetNextEntry()) != null)
+                {
+                    if (entry.Name.EndsWith("x32/d3d9.dll"))
+                    {
+                        using (FileStream fsOut = File.Create(Path.Combine(installationDir, "d3d9.dll")))
+                        {
+                            tarStream.CopyEntryContents(fsOut);
+                            Logger.Debug(" d3d9.dll extracted into the game folder.");
+                        }
+                        break;
+                    }
+                }
+            }
+
+            Logger.Debug(" Deleting the .tar.gz...");
+            File.Delete("dxvk.tar.gz");
+
+            Logger.Debug(" Writing the dxvk.conf...");
+            using (StreamWriter confWriter = File.CreateText(Path.Combine(installationDir, "dxvk.conf")))
+            {
+                foreach (string option in dxvkConf)
+                {
+                    confWriter.WriteLine(option);
+                }
+            }
+            Logger.Debug(" dxvk.conf successfully written to game folder.");
+            extractfinished = true;
+        }
         private async Task downloaddxvk(string link, List<string> dxvkconf, bool gitlab, bool githubalt)
         {
             var httpClient = new HttpClient();
@@ -308,25 +396,31 @@ namespace GTAIVSetupUtilityWPF
             switch (gitlab, githubalt)
             {
                 case (false, false):
-                {
-                    downloadUrl = parsed.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
-                    break;
-                }
+                    {
+                        downloadUrl = parsed.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
+                        break;
+                    }
                 case (true, false):
-                {
-                    downloadUrl = parsed[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
-                    break;
-                }
+                    {
+                        downloadUrl = parsed[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
+                        break;
+                    }
                 case (false, true):
-                {
-                    downloadUrl = parsed.GetProperty("browser_download_url").GetString();
-                    break;
-                }
+                    {
+                        downloadUrl = parsed.GetProperty("browser_download_url").GetString();
+                        break;
+                    }
 
             }
-            DXVKInstaller.InstallDXVK(downloadUrl!, gamedirectory.Text, dxvkconf);
+            InstallDXVK(downloadUrl!);
+            while (!downloadfinished)
+            {
+                await Task.Delay(500);
+            }
+            downloadfinished = false;
+            ExtractDXVK(gamedirectory.Text, dxvkconf);
         }
-        private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
+            private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
         {
             Logger.Debug(" User clicked on the Install DXVK button.");
             dxvkPanel.IsEnabled = false;
@@ -477,14 +571,24 @@ namespace GTAIVSetupUtilityWPF
                     {
                         Logger.Info(" Installing DXVK-async 1.10.3...");
                         dxvkconf.Add("dxvk.enableAsync = true");
-                        await downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231", dxvkconf, false, true);
+                        downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231", dxvkconf, false, true);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
                         MessageBox.Show($"DXVK-async 1.10.3 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                         Logger.Info(" DXVK-async 1.10.3 has been installed!");
                     }
                     else
                     {
                         Logger.Info(" Installing DXVK 1.10.3...");
-                        await downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736", dxvkconf, false, true);
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736", dxvkconf, false, true);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
                         MessageBox.Show($"DXVK 1.10.3 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                         Logger.Info(" DXVK 1.10.3 has been installed!");
                     }
@@ -495,14 +599,24 @@ namespace GTAIVSetupUtilityWPF
                         Logger.Info(" Installing Latest DXVK-gplasync...");
                         dxvkconf.Add("dxvk.enableAsync = true");
                         dxvkconf.Add("dxvk.gplAsyncCache = true");
-                        await downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/", dxvkconf, true, false);
+                        downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/", dxvkconf, true, false);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
                         MessageBox.Show($"Latest DXVK-gplasync has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                         Logger.Info(" Latest DXVK-gplasync has been installed!");
                     }
                     else
                     {
                         Logger.Info(" Installing Latest DXVK...");
-                        await downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/latest", dxvkconf, false, false);
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/latest", dxvkconf, false, false);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
                         MessageBox.Show($"Latest DXVK has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                         Logger.Info(" Latest DXVK has been installed!");
                     }
@@ -512,14 +626,24 @@ namespace GTAIVSetupUtilityWPF
                     {
                         Logger.Info(" Installing DXVK-async 1.10.1...");
                         dxvkconf.Add("dxvk.enableAsync = true");
-                        await downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/60677007", dxvkconf, false, true);
+                        downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/60677007", dxvkconf, false, true);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
                         MessageBox.Show($"DXVK-async 1.10.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
                         Logger.Info(" DXVK-async 1.10.1 has been installed!");
                     }
                     else
                     {
                         Logger.Info(" Installing DXVK 1.10.1...");
-                        await downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/60669426", dxvkconf, false, true);
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/60669426", dxvkconf, false, true);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
                         MessageBox.Show($"DXVK 1.10.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.", "Information");
                         Logger.Info(" DXVK 1.10.1 has been installed!");
                     }
