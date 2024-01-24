@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace GTAIVSetupUtilityWPF.Common
 {
@@ -8,8 +10,9 @@ namespace GTAIVSetupUtilityWPF.Common
     public static class DisplayInfo
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        private struct DisplayDevice
+        private struct DISPLAY_DEVICE
         {
+            public int cb;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string DeviceName;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
@@ -21,36 +24,38 @@ namespace GTAIVSetupUtilityWPF.Common
         }
 
         [DllImport("user32.dll")]
-        private static extern bool EnumDisplayDevices(string? lpDevice, int iDevNum, ref DisplayDevice lpDisplayDevice, int dwFlags);
+        private static extern bool EnumDisplayDevices(string? lpDevice, int iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, int dwFlags);
 
         public static void GetPrimaryDisplayInfo(out int width, out int height, out int refreshRate)
         {
-            DisplayDevice primaryDevice = new DisplayDevice();
+            DISPLAY_DEVICE primaryDevice = new DISPLAY_DEVICE();
+            primaryDevice.cb = Marshal.SizeOf(primaryDevice);
+
+            // default values if this doesn't work
+            width = 1920;
+            height = 1080;
+            refreshRate = 60;
 
             if (EnumDisplayDevices(null, 0, ref primaryDevice, 0))
             {
-                Devmode devMode = new Devmode();
+                DEVMODE devMode = new DEVMODE();
+                devMode.dmSize = (short)Marshal.SizeOf(devMode);
 
                 if (EnumDisplaySettings(primaryDevice.DeviceName, -1, ref devMode))
                 {
                     width = devMode.dmPelsWidth;
                     height = devMode.dmPelsHeight;
                     refreshRate = devMode.dmDisplayFrequency;
-                    return;
                 }
             }
-
-            // If we couldn't retrieve the information, set default values or throw an exception.
-            width = 1920; // Default width
-            height = 1080; // Default height
-            refreshRate = 60; // Default refresh rate
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct Devmode
+        private struct DEVMODE
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string dmDeviceName;
+            public short dmSize;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string dmFormName;
             public int dmPelsWidth;
@@ -59,6 +64,6 @@ namespace GTAIVSetupUtilityWPF.Common
         }
 
         [DllImport("user32.dll")]
-        private static extern bool EnumDisplaySettings(string lpszDeviceName, int iModeNum, ref Devmode lpDevMode);
+        private static extern bool EnumDisplaySettings(string lpszDeviceName, int iModeNum, ref DEVMODE lpDevMode);
     }
 }
