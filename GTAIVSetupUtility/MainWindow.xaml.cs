@@ -74,10 +74,15 @@ namespace GTAIVSetupUtilityWPF
             return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString()
                 ?? String.Empty;
         }
-        private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
+
+        void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
         {
-            Regex regex = new Regex("[^0-9]+");
-            e.Handled = regex.IsMatch(e.Text);
+            Dispatcher.BeginInvoke((Action)delegate
+            {
+                Logger.Debug(" Successfully downloaded.");
+                downloadfinished = true;
+                installdxvkbtn.Content = $"Installing...";
+            });
         }
         private void async_Click(object sender, RoutedEventArgs e)
         {
@@ -198,13 +203,36 @@ namespace GTAIVSetupUtilityWPF
                 if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     Logger.Debug(" User selected a folder, proceeding...");
-                    if (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0") || (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1.2")))
+                    string gamever = AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe");
+                    if (gamever.StartsWith("1, 0") || (gamever.StartsWith("1.2")))
                     {
-                        if (AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
-                        else { isretail = false; Logger.Debug(" Folder contains an exe of Steam Version."); }
-                        if (isretail && !AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe").StartsWith("1, 0, 8"))
+                        if (gamever.StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
+                        else {
+                            Logger.Debug(" Folder contains an exe of Steam Version.");
+                            isretail = false;
+                            if (File.Exists($"{dialog.FileName}\\commandline.txt")){
+                                Logger.Info("commandline.txt detected on Steam Version...");
+                                MessageBox.Show("You appear to have a commandline.txt, however your are using the Steam version which doesn't use that file. Consider moving these options to Steam Launch Options or launch arguments.");
+                            }
+                          }
+                        if (isretail && !gamever.StartsWith("1, 0, 8"))
                         { vidmemcheck.IsEnabled = false; gb3check.IsEnabled = false; gb4check.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
-
+                        if (File.Exists($"{dialog.FileName}\\dsound.dll"))
+                        {
+                            Logger.Info("dsound.dll detected, warning the user...");
+                            var result = MessageBox.Show("You appear to have an outdated ASI Loader (dsound.dll). Consider removing it.\n\nPress 'Yes' to get redirected to download to the latest version - download the non-x64 one, rename dinput8.dll to xlive.dll if you don't plan to play GFWL and using non-Steam version.", "Outdated ASI loader.", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                            if (result == MessageBoxResult.Yes)
+                            {
+                                ProcessStartInfo psi = new ProcessStartInfo
+                                {
+                                    FileName = "cmd",
+                                    Arguments = $"/c start {"https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases/latest"}",
+                                    CreateNoWindow = true,
+                                    UseShellExecute = false,
+                                };
+                                Process.Start(psi);
+                            }
+                        }
                         directorytxt.Text = "Game Directory:";
                         directorytxt.FontWeight = FontWeights.Normal;
                         directorytxt.TextDecorations = null;
@@ -490,16 +518,6 @@ namespace GTAIVSetupUtilityWPF
                 double percentage = bytesIn / totalBytes * 100;
                 int percentageInt = Convert.ToInt16(percentage);
                 installdxvkbtn.Content = $"Downloading... ({percentageInt}%)";
-            });
-        }
-
-        void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
-        {
-            Dispatcher.BeginInvoke((Action)delegate
-            {
-                Logger.Debug(" Successfully downloaded.");
-                downloadfinished = true;
-                installdxvkbtn.Content = $"Installing...";
             });
         }
         private async Task ExtractDXVK(string installationDir, List<string> dxvkConf)
