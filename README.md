@@ -16,10 +16,13 @@ This version is a re-write of the now-deprecated [Python version](https://github
 - Automatically installing the best version of DXVK supported by your hardware by checking it's Vulkan capabilities.
 - Automatically sets up your launch options, including monitor details and VRAM (VRAM not available for versions older than 1.0.8.0; have to paste options manually on 1.2)
 - Accounting for multi-GPU setups, both during DXVK setup and setting up the launch options.
-- Detects whether some features are unsupported by your hardware.
-- Detects if ZolikaPatch and/or FusionFix are installed and edits their configuration files to be compatible with eachother.
+- Detects whether some features are unsupported by your hardware or installed mods.
+- Detects if ZolikaPatch is outdated (by checking if the latest option is missing from the ini) and prompts the user to update it.
+- Detects if ZolikaPatch and/or FusionFix are installed and prompts to edit their configuration files to be compatible with eachother.
 - Properly enables/disables Borderless Fullscreen if using ZolikaPatch or FusionFix
 - Warns the user if they have IVSDK .NET and DXVK installed at the same time as RTSS is enabled.
+- Prompts the user to fix GFWL achievements if using GFWL (or revert fixing them; this will trigger if using XLivelessNess at the moment).
+- Removing `GFWLDLCs.asi` and enabling `LoadDLCs` if ZolikaPatch is present.
 - Providing tips for what the launch options actually do. And *not* providing useless options.
 
 ## Contribution
