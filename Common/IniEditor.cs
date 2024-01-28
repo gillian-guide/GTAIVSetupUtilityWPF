@@ -64,7 +64,7 @@ namespace GTAIVSetupUtilityWPF.Common
             {
                 return value;
             }
-            return "0"; // Default value if the key or group is not found
+            return "N/A"; // Default value if the key or group is not found
         }
 
         public void EditValue(string group, string key, string newValue)

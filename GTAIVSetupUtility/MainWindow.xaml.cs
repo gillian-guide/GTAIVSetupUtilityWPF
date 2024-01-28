@@ -21,6 +21,7 @@ using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using System.Threading;
 using System.ComponentModel;
+using System.Reflection;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -186,8 +187,6 @@ namespace GTAIVSetupUtilityWPF
                 $"Version: {GetAssemblyVersion()}",
                 "Information");
         }
-
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Logger.Debug(" User is selecting the game folder...");
@@ -262,25 +261,181 @@ namespace GTAIVSetupUtilityWPF
                                 iniModify = zolikaPatchPath;
                                 ffix = false;
                                 Logger.Debug(" User has ZolikaPatch.");
+                                IniEditor iniParserft = new IniEditor(ziniModify);
+                                if (iniParserft.ReadValue("Options", "RestoreDeathMusic") == "N/A")
+                                {
+                                    var result = MessageBox.Show("Your ZolikaPatch is outdated.\n\nDo you wish to download the latest version? (this will redirect to Zolika1351's website for manual download)", "ZolikaPatch is outdated", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                    if (result == MessageBoxResult.Yes)
+                                    {
+                                        ProcessStartInfo psi = new ProcessStartInfo
+                                        {
+                                            FileName = "cmd",
+                                            Arguments = $"/c start {"https://zolika1351.pages.dev/mods/ivpatch"}",
+                                            CreateNoWindow = true,
+                                            UseShellExecute = false,
+                                        };
+                                        Process.Start(psi);
+                                        MessageBox.Show("Press OK to restart the app after updating ZolikaPatch. Do not unpack 'PlayGTAIV.exe'.", "ZolikaPatch is outdated");
+                                        System.Windows.Forms.Application.Restart();
+                                        Environment.Exit(0);
+                                    }
+                                }
+                                if (File.Exists($"{dialog.FileName}\\GFWLDLC.asi"))
+                                {
+                                    File.Delete($"{dialog.FileName}\\GFWLDLC.asi");
+                                }
+                                if (iniParserft.ReadValue("Options", "LoadDLCs") == "0")
+                                {
+                                    iniParserft.EditValue("Options", "LoadDLCs", "1");
+                                }
+                                if (File.Exists($"{dialog.FileName}\\dinput8.dll") && !File.Exists($"{dialog.FileName}\\xlive.dll"))
+                                {
+                                    var result = MessageBox.Show("You appear to be using GFWL. Do you wish to remove Steam Achievements (if exists) and fix ZolikaPatch options to receive GFWL achievements?\n\nPressing 'No' can revert this if you agreed to this earlier.", "GFWL Achievements", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                    if (result == MessageBoxResult.Yes)
+                                    {
+                                        if (File.Exists($"{dialog.FileName}\\SteamAchievements.asi"))
+                                       {
+                                            if (!Directory.Exists($"{dialog.FileName}\\backup"))
+                                            {
+                                                Directory.CreateDirectory($"{dialog.FileName}\\backup");
+                                            }
+                                            File.Move($"{dialog.FileName}\\SteamAchievements.asi", $"{dialog.FileName}\\backup\\SteamAchievements.asi");
+                                        }
+                                        if (iniParserft.ReadValue("Options", "TryToSkipAllErrors") == "1")
+                                        {
+                                            iniParserft.EditValue("Options", "TryToSkipAllErrors", "0");
+                                        }
+                                        if (iniParserft.ReadValue("Options", "VSyncFix") == "1")
+                                        {
+                                            iniParserft.EditValue("Options", "VSyncFix", "0");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (File.Exists($"{dialog.FileName}\\backup\\SteamAchievements.asi")) { File.Move($"{dialog.FileName}\\backup\\SteamAchievements.asi", $"{dialog.FileName}\\SteamAchievements.asi"); }
+                                        if (iniParserft.ReadValue("Options", "TryToSkipAllErrors") == "0")
+                                        {
+                                            iniParserft.EditValue("Options", "TryToSkipAllErrors", "1");
+                                        }
+                                        if (iniParserft.ReadValue("Options", "VSyncFix") == "0")
+                                        {
+                                            iniParserft.EditValue("Options", "VSyncFix", "1");
+                                        }
+                                    }
+                                }
+
                                 break;
                             case (true, true):
-                                Logger.Debug(" User has FusionFix and ZolikaPatch. Disabling unnecessary ZolikaPatch options...");
+                                Logger.Debug(" User has FusionFix and ZolikaPatch. Asking the user if they want to change incompatible ZolikaPatch options...");
                                 iniModify = fusionFixCfgPath;
                                 ziniModify = zolikaPatchPath;
                                 ffix = true;
-                                IniEditor iniParser = new IniEditor(ziniModify);
-                                iniParser.EditValue("Options", "BuildingAlphaFix", "0");
-                                iniParser.EditValue("Options", "EmissiveLerpFix", "0");
-                                iniParser.EditValue("Options", "BikePhoneAnimsFix", "0");
-                                iniParser.EditValue("Options", "BorderlessWindowed", "0");
-                                iniParser.EditValue("Options", "CutsceneFixes", "0");
-                                iniParser.EditValue("Options", "HighFPSBikePhysicsFix", "0");
-                                iniParser.EditValue("Options", "HighFPSSpeedupFix", "0");
-                                iniParser.EditValue("Options", "ReversingLightFix", "0");
-                                iniParser.EditValue("Options", "OutOfCommissionFix", "0");
-                                iniParser.EditValue("Options", "SkipIntro", "0");
-                                iniParser.EditValue("Options", "SkipMenu", "0");
-                                iniParser.SaveFile();
+                                IniEditor iniParsertt = new IniEditor(ziniModify);
+                                bool optionsChanged = false;
+                                bool optToChangeOptions = false;
+                                List<string> incompatibleOptions = new List<string>()
+                                {
+                                    "BuildingAlphaFix",
+                                    "EmissiveLerpFix",
+                                    "BikePhoneAnimsFix",
+                                    "CutsceneFixes",
+                                    "HighFPSBikePhysicsFix",
+                                    "HighFPSSpeedupFix",
+                                    "ReversingLightFix",
+                                    "OutOfComissionFix",
+                                    "SkipIntro",
+                                    "SkipMenu"
+                                };
+
+                                if (iniParsertt.ReadValue("Options", "RestoreDeathMusic") == "N/A")
+                                {
+                                    var result = MessageBox.Show("Your ZolikaPatch is outdated.\n\nDo you wish to download the latest version? (this will redirect to Zolika1351's website for manual download)", "ZolikaPatch is outdated", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                    if (result == MessageBoxResult.Yes)
+                                    {
+                                        ProcessStartInfo psi = new ProcessStartInfo
+                                        {
+                                            FileName = "cmd",
+                                            Arguments = $"/c start {"https://zolika1351.pages.dev/mods/ivpatch"}",
+                                            CreateNoWindow = true,
+                                            UseShellExecute = false,
+                                        };
+                                        Process.Start(psi);
+                                        MessageBox.Show("Press OK to restart the app after updating ZolikaPatch. Do not unpack 'PlayGTAIV.exe'.", "ZolikaPatch is outdated");
+                                        System.Windows.Forms.Application.Restart();
+                                        Environment.Exit(0);
+                                    }
+                                }
+
+                                if (File.Exists($"{dialog.FileName}\\GFWLDLC.asi"))
+                                {
+                                    File.Delete($"{dialog.FileName}\\GFWLDLC.asi");
+                                }
+                                if (iniParsertt.ReadValue("Options", "LoadDLCs") == "0")
+                                {
+                                    iniParsertt.EditValue("Options", "LoadDLCs", "1");
+                                }
+                                if (File.Exists($"{dialog.FileName}\\dinput8.dll") && !File.Exists($"{dialog.FileName}\\xlive.dll"))
+                                {
+                                    var result = MessageBox.Show("You appear to be using GFWL. Do you wish to remove Steam Achievements (if exists) and fix ZolikaPatch options to receive GFWL achievements?\n\nPressing 'No' can revert this if you agreed to this earlier.", "GFWL Achievements", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                    if (result == MessageBoxResult.Yes)
+                                    {
+                                        if (File.Exists($"{dialog.FileName}\\SteamAchievements.asi"))
+                                        {
+                                            if (!Directory.Exists($"{dialog.FileName}\\backup"))
+                                            {
+                                                Directory.CreateDirectory($"{dialog.FileName}\\backup");
+                                            }
+                                            File.Move($"{dialog.FileName}\\SteamAchievements.asi", $"{dialog.FileName}\\backup\\SteamAchievements.asi");
+                                        }
+                                        if (iniParsertt.ReadValue("Options", "TryToSkipAllErrors") == "1")
+                                        {
+                                            iniParsertt.EditValue("Options", "TryToSkipAllErrors", "0");
+                                        }
+                                        if (iniParsertt.ReadValue("Options", "VSyncFix") == "1")
+                                        {
+                                            iniParsertt.EditValue("Options", "VSyncFix", "0");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (File.Exists($"{dialog.FileName}\\backup\\SteamAchievements.asi")) { File.Move($"{dialog.FileName}\\backup\\SteamAchievements.asi", $"{dialog.FileName}\\SteamAchievements.asi"); }
+                                        if (iniParsertt.ReadValue("Options", "TryToSkipAllErrors") == "0")
+                                        {
+                                            iniParsertt.EditValue("Options", "TryToSkipAllErrors", "1");
+                                        }
+                                        if (iniParsertt.ReadValue("Options", "VSyncFix") == "0")
+                                        {
+                                            iniParsertt.EditValue("Options", "VSyncFix", "1");
+                                        }
+                                    }
+                                }
+
+                                foreach (string option in incompatibleOptions)
+                                {
+                                    if (iniParsertt.ReadValue("Options", option) == "1")
+                                    {
+                                        if (!optToChangeOptions)
+                                        {
+                                            var result = MessageBox.Show("Your ZolikaPatch options are incompatible with FusionFix. This may lead to crashes, inconsistencies, visual issues etc.\n\nDo you wish to fix the options?", "Fix ZolikaPatch - FusionFix compatibility?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                            if (result == MessageBoxResult.Yes)
+                                            {
+                                                optToChangeOptions = true;
+                                                iniParsertt.EditValue("Options", option, "0");
+                                                optionsChanged = true;
+                                            }
+                                            else
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            iniParsertt.EditValue("Options", option, "0");
+                                            optionsChanged = true;
+                                        }
+                                    }
+                                }
+                                if (optionsChanged) { iniParsertt.SaveFile(); }
                                 break;
 
                         }

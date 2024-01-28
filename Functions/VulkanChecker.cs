@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows;
 
-// hi here, i'm an awful coder, so please clean up for me if it really bothers you
+// hi here, i'm an awful coder, so please clean up for me if it really bothers you (and like, this code is *really* stupid, sorry)
 // this code accounts for ALL gpu's in the system and tries to work out the best conditions for installing DXVK
 // so please don't strip the functionality
 namespace GTAIVSetupUtilityWPF.Functions
@@ -19,7 +21,6 @@ namespace GTAIVSetupUtilityWPF.Functions
             uint minor = apiversion >> 12 & 0x3ff;
             return (Convert.ToInt32(major), Convert.ToInt32(minor));
         }
-
         public static (int, int, bool, bool, bool, bool) VulkanCheck()
         {
             int i = 0;
@@ -29,41 +30,33 @@ namespace GTAIVSetupUtilityWPF.Functions
             bool dgpuOnly = true;
             bool intelIgpu = false;
             bool nvidiaGpu = false;
+            bool atLeastOneGPUSucceededVulkanInfo = false;
+            bool atLeastOneGPUSucceededJson = false;
+            bool atLeastOneGPUFailed = false;
+            List<int> listOfFailedGPUs = new List<int>();
 
             while (true)
             {
-                Logger.Debug($" Running vulkaninfo on GPU{i}... If this infinitely loops, your GPU is weird!");
-                Process process = new Process();
-                process.StartInfo.FileName = "vulkaninfo";
-                process.StartInfo.Arguments = $"--json={i} --output data{i}.json";
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.CreateNoWindow = true;
-                string output;
                 try
                 {
-                    process.Start();
-                    output = process.StandardOutput.ReadToEnd();
-                }
-                catch (System.ComponentModel.Win32Exception)
-                {
-                    MessageBox.Show("The vulkaninfo check failed. This usually means your GPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either. DXVK is not available.");
-                    Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
-                    return (0, 0, false, false, false, false);
-                }
+                    Logger.Debug($" Running vulkaninfo on GPU{i}... If this infinitely loops, your GPU is weird!");
+                    Process process = new Process();
+                    process.StartInfo.FileName = "vulkaninfo";
+                    process.StartInfo.Arguments = $"--json={i} --output data{i}.json";
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.CreateNoWindow = true;
 
-                process.WaitForExit(10);
-                if (process.ExitCode != 0 && output.Contains("The selected gpu"))
-                {
-                    Logger.Debug($" GPU{i} doesn't exist, moving on");
-                    break;
-                }
-                else if (!File.Exists($"data{i}.json"))
-                {
-                    Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
-                    process.StartInfo.Arguments = $"--json={i} --output data{i}.json > data{i}.json";
                     process.Start();
-                    process.WaitForExit(10);
+                    string output = process.StandardOutput.ReadToEnd();
+
+                    if (!process.WaitForExit(10))
+                    {
+                        Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
+                        atLeastOneGPUFailed = true;
+                        listOfFailedGPUs.Add(i);
+                    }
+
                     if (process.ExitCode != 0 && output.Contains("The selected gpu"))
                     {
                         Logger.Debug($" GPU{i} doesn't exist, moving on");
@@ -71,18 +64,58 @@ namespace GTAIVSetupUtilityWPF.Functions
                     }
                     else if (!File.Exists($"data{i}.json"))
                     {
-                        MessageBox.Show("The vulkaninfo check failed. This usually means your GPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either. DXVK is not available.");
-                        Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
-                        return (0, 0, false, false, false, false);
+                        Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
+                        process.StartInfo.Arguments = $"--json={i} --output data{i}.json > data{i}.json";
+                        process.Start();
+                        if (!process.WaitForExit(10))
+                        {
+                            Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
+                            atLeastOneGPUFailed = true;
+                            listOfFailedGPUs.Add(i);
+                        }
+
+                        if (process.ExitCode != 0 && output.Contains("The selected gpu"))
+                        {
+                            Logger.Debug($" GPU{i} doesn't exist, moving on");
+                            break;
+                        }
+                        else if (!File.Exists($"data{i}.json"))
+                        {
+                            Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
+                            atLeastOneGPUFailed = true;
+                            listOfFailedGPUs.Add(i);
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.", ex);
+                    atLeastOneGPUFailed = true;
+                    listOfFailedGPUs.Add(i);
+                }
 
+                if (!listOfFailedGPUs.Contains(i))
+                {
+                    atLeastOneGPUSucceededVulkanInfo = true;
+                }
                 i++;
+            }
+            if (!atLeastOneGPUSucceededVulkanInfo)
+            {
+                MessageBox.Show("The vulkaninfo check failed entirely. This usually means none of your GPU's support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
+                Logger.Error($" Running vulkaninfo failed entirely! User likely has outdated drivers or an extremely old GPU.");
+                return (0, 0, false, false, false, false);
             }
 
             Logger.Debug($" Analyzing the vulkaninfo for every .json generated...");
             for (int x = 0; x < i; x++)
             {
+                if (listOfFailedGPUs.Contains(x))
+                {
+                    Logger.Debug($" GPU{x} is in the failed list, skipping this iteration of the loop...");
+                    continue;
+                }
+
                 Logger.Debug($" Checking data{x}.json...");
                 if (File.Exists($"data{x}.json"))
                 {
@@ -90,17 +123,18 @@ namespace GTAIVSetupUtilityWPF.Functions
                     {
 
                         int dxvkSupport = 0;
-                        JsonDocument doc;
+                        JsonDocument doc = null;
                         try
                         {
                             doc = JsonDocument.Parse(file.ReadToEnd());
                         }
                         catch (JsonException)
                         {
-                            Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has no vulkan 1.1+ support.");
-                            MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have no support for DXVK, but that may not be the case.");
-                            return (0, 0, false, false, false, false);
+                            Logger.Error($" Failed to read data{x}.json.");
+                            atLeastOneGPUFailed = true;
+                            listOfFailedGPUs.Add(x);
                         }
+
                         JsonElement root = doc.RootElement;
                         if (root.TryGetProperty("capabilities", out JsonElement h))
                         {
@@ -119,12 +153,14 @@ namespace GTAIVSetupUtilityWPF.Functions
                             }
                             try
                             {
+                                // a proper code wouldn't rely on a try-catch iteration here but rather just do an if-else check, but i'm stupid and i don't want to refactor any of this, teehee <3
                                 Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
                                 if (capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_robustness2", out _)
                                     && capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_transform_feedback", out _)
                                     && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("robustBufferAccess2").GetBoolean()
                                     && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("nullDescriptor").GetBoolean())
                                 {
+                                    atLeastOneGPUSucceededJson = true;
                                     Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
                                     dxvkSupport = 2;
                                 }
@@ -137,12 +173,14 @@ namespace GTAIVSetupUtilityWPF.Functions
                             catch
                             {
                                 Logger.Debug($" Catched an exception, this means GPU{x} doesn't support DXVK 2.x, checking other versions...");
-                                if (vulkanVerMajor <= 1 && vulkanVerMinor == 1)
+                                if (vulkanVerMajor == 1 && vulkanVerMinor <= 1)
                                 {
+                                    atLeastOneGPUSucceededJson = true;
                                     Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
                                 }
                                 else if (vulkanVerMajor == 1 && vulkanVerMinor < 3)
                                 {
+                                    atLeastOneGPUSucceededJson = true;
                                     Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
                                     dxvkSupport = 1;
                                 }
@@ -182,6 +220,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                             }
                             if (System.Convert.ToInt16(vulkanVer.ToString().Split('.')[0]) >= 1 && System.Convert.ToInt16(vulkanVer.ToString().Split('.')[1]) >= 1)
                             {
+                                atLeastOneGPUSucceededJson = true;
                                 Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
                                 vkIgpuDxvkSupport = 1;
                             }
@@ -190,6 +229,8 @@ namespace GTAIVSetupUtilityWPF.Functions
                         {
                             Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has an Intel iGPU.");
                             MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have an Intel iGPU with outdated drivers, but that may not be the case.");
+                            atLeastOneGPUFailed = true;
+                            atLeastOneGPUSucceededJson = true; // not really but just to avoid sabotaging the code ¯\_(ツ)_/¯
                             igpuOnly = true;
                             dgpuOnly = false;
                             intelIgpu = true;
@@ -202,6 +243,20 @@ namespace GTAIVSetupUtilityWPF.Functions
                 else { break; }
             }
 
+            if (!atLeastOneGPUSucceededJson)
+            {
+                MessageBox.Show("The vulkaninfo check failed partially. This usually means one of your GPU's may support Vulkan but have outdated drivers. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
+                Logger.Error($" Running vulkaninfo failed partially. User likely has outdated drivers or an extremely old GPU.");
+                return (0, 0, false, false, false, false);
+            }
+            if (atLeastOneGPUFailed && igpuOnly)
+            {
+                MessageBox.Show("The vulkaninfo check failed for GPU 0 but succeeded for the integrated GPU. This usually means your main GPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is available, but with the assumption that you're going to be playing off the integrated GPU, not the dedicated one.");
+            }
+            else if (atLeastOneGPUFailed && !igpuOnly)
+            {
+                MessageBox.Show("The vulkaninfo check failed for one of the GPU's but succeeded for the rest. This usually means your secondary GPU or the iGPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is available with the assumption that you're going to be playing off the GPU that didn't fail the vulkaninfo check (usually your main GPU).");
+            }
             return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, igpuOnly, dgpuOnly, intelIgpu, nvidiaGpu);
         }
     }
