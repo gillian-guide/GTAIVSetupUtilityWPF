@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Text.Json;
 using System.Windows;
 
@@ -23,7 +24,7 @@ namespace GTAIVSetupUtilityWPF.Functions
         }
         public static (int, int, bool, bool, bool, bool) VulkanCheck()
         {
-            int i = 0;
+            int gpucount = 0;
             int vkDgpuDxvkSupport = 0;
             int vkIgpuDxvkSupport = 0;
             bool igpuOnly = true;
@@ -34,8 +35,19 @@ namespace GTAIVSetupUtilityWPF.Functions
             bool atLeastOneGPUSucceededJson = false;
             bool atLeastOneGPUFailed = false;
             List<int> listOfFailedGPUs = new List<int>();
-
-            while (true)
+            try
+            {
+                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_VideoController");
+                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+                ManagementObjectCollection videoControllers = searcher.Get();
+                gpucount = videoControllers.Count;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($" Ran into error: ", ex);
+                throw;
+            }
+            for (int i = 0; i < gpucount; i++)
             {
                 try
                 {
@@ -52,15 +64,8 @@ namespace GTAIVSetupUtilityWPF.Functions
 
                     if (!process.WaitForExit(10))
                     {
-                        Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
                         atLeastOneGPUFailed = true;
                         listOfFailedGPUs.Add(i);
-                    }
-
-                    if (process.ExitCode != 0 && output.Contains("The selected gpu"))
-                    {
-                        Logger.Debug($" GPU{i} doesn't exist, moving on");
-                        break;
                     }
                     else if (!File.Exists($"data{i}.json"))
                     {
@@ -69,19 +74,11 @@ namespace GTAIVSetupUtilityWPF.Functions
                         process.Start();
                         if (!process.WaitForExit(10))
                         {
-                            Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
                             atLeastOneGPUFailed = true;
                             listOfFailedGPUs.Add(i);
                         }
-
-                        if (process.ExitCode != 0 && output.Contains("The selected gpu"))
-                        {
-                            Logger.Debug($" GPU{i} doesn't exist, moving on");
-                            break;
-                        }
                         else if (!File.Exists($"data{i}.json"))
                         {
-                            Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
                             atLeastOneGPUFailed = true;
                             listOfFailedGPUs.Add(i);
                         }
@@ -89,7 +86,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.", ex);
+                    Logger.Error($" Ran into error: ", ex);
                     atLeastOneGPUFailed = true;
                     listOfFailedGPUs.Add(i);
                 }
@@ -98,7 +95,10 @@ namespace GTAIVSetupUtilityWPF.Functions
                 {
                     atLeastOneGPUSucceededVulkanInfo = true;
                 }
-                i++;
+                else
+                {
+                    Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
+                }
             }
             if (!atLeastOneGPUSucceededVulkanInfo)
             {
@@ -108,7 +108,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             }
 
             Logger.Debug($" Analyzing the vulkaninfo for every .json generated...");
-            for (int x = 0; x < i; x++)
+            for (int x = 0; x < gpucount; x++)
             {
                 if (listOfFailedGPUs.Contains(x))
                 {
