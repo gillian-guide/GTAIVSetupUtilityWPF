@@ -5,14 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GTAIVSetupUtilityWPF"
         mc:Ignorable="d"
-        Title="Gillian's Peppa Pig: World Adventures Setup Utility"
+        Title="Gillian's GTA IV Setup Utility"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen"
         Icon="/Assets/ivlogo.png"
         ResizeMode="NoResize">
     <Grid>
         <StackPanel Margin="5,5,5,5" Grid.ColumnSpan="2">
-            <TextBlock Margin="0,0,0,0" FontSize="28" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's PPWA Setup Utility!</TextBlock>
+            <TextBlock Margin="0,0,0,0" FontSize="28" TextWrapping="Wrap" HorizontalAlignment="Center">Welcome to Gillian's GTA IV Setup Utility!</TextBlock>
             <TextBlock x:Name="directorytxt" HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="Wrap" Text="Set your game directory before using:" VerticalAlignment="Top" FontWeight="SemiBold" TextDecorations="Underline"/>
             <StackPanel Orientation="Horizontal">
                 <TextBox HorizontalAlignment="Left" x:Name="gamedirectory" Margin="0,2,0,0" VerticalAlignment="Top" Width="461" IsEnabled="False"/>
