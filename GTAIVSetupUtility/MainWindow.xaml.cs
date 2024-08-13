@@ -216,6 +216,7 @@ namespace GTAIVSetupUtilityWPF
                                 !line.Contains("-notimefix") &&
                                 !line.Contains("-novblank") &&
                                 !line.Contains("-percentvidmem") &&
+                                !line.Contains("-memrestrict") &&
                                 !line.Contains("-reserve") &&
                                 !line.Contains("-reservedApp") &&
                                 !line.Contains("-disableimposters") &&
@@ -599,7 +600,7 @@ namespace GTAIVSetupUtilityWPF
                     Logger.Debug(entry.Name);
                     if (entry.Name.EndsWith("x32/d3d9.dll"))
                     {
-                        using (FileStream fsOut = File.Create(Path.Combine(installationDir, "d3d9.dll")))
+                        using (FileStream fsOut = File.Create(System.IO.Path.Combine(installationDir, "d3d9.dll")))
                         {
                             tarStream.CopyEntryContents(fsOut);
                             Logger.Debug(" d3d9.dll extracted into the game folder.");
@@ -613,7 +614,7 @@ namespace GTAIVSetupUtilityWPF
             File.Delete("dxvk.tar.gz");
 
             Logger.Debug(" Writing the dxvk.conf...");
-            using (StreamWriter confWriter = File.CreateText(Path.Combine(installationDir, "dxvk.conf")))
+            using (StreamWriter confWriter = File.CreateText(System.IO.Path.Combine(installationDir, "dxvk.conf")))
             {
                 foreach (string option in dxvkConf)
                 {
@@ -905,40 +906,52 @@ namespace GTAIVSetupUtilityWPF
             if (windowedcheck.IsEnabled)
             {
                 IniEditor iniParser = new IniEditor(iniModify);
-                string borderlessWindowedValue;
+                bool borderlessWindowedValue;
+                bool ffWindowed = true;
+                bool ffBorderless = true;
+                bool ffFocusLossless = true;
                 if (ffix)
                 {
-                    borderlessWindowedValue = iniParser.ReadValue("MAIN", "BorderlessWindowed");
+                    ffWindowed = iniParser.ReadValue("MAIN", "Windowed") == "1";
+                    ffBorderless = iniParser.ReadValue("MAIN", "BorderlessWindowed") == "1";
+                    ffFocusLossless = iniParser.ReadValue("MAIN", "BlockOnLostFocus") == "0";
+                    borderlessWindowedValue = ffWindowed && ffBorderless && ffFocusLossless;
                 }
                 else
                 {
-                    borderlessWindowedValue = iniParser.ReadValue("Options", "BorderlessWindowed");
+                    borderlessWindowedValue = iniParser.ReadValue("Options", "BorderlessWindowed") == "1";
                 }
                 if (windowedcheck.IsChecked == true)
                 {
                     Logger.Debug(" User chose to enable Borderless Windowed");
-                    if (borderlessWindowedValue == "0")
+                    if (borderlessWindowedValue == false)
                     {
                         Logger.Debug(" Borderless Windowed is disabled in the ini, enabling it back...");
                         if (ffix)
                         {
-                            iniParser.EditValue("MAIN", "BorderlessWindowed", "1");
+                            if (!ffWindowed) { iniParser.EditValue("MAIN", "Windowed", "1"); }
+                            if (!ffBorderless) { iniParser.EditValue("MAIN", "BorderlessWindowed", "1"); }
+                            if (!ffFocusLossless) { iniParser.EditValue("MAIN", "BlockOnLostFocus", "0"); }
+                            Logger.Debug(" Enabled Borderless Windowed and disabled Pause Game on Focus Loss.");
                         }
                         else
                         {
+                            launchoptions.Add("-windowed");
+                            launchoptions.Add("-noBlockOnLostFocus");
                             iniParser.EditValue("Options", "BorderlessWindowed", "1");
+                            Logger.Debug(" Added -windowed and -noBlockOnLostFocus.");
                         }
                         iniParser.SaveFile();
                     }
-                    launchoptions.Add("-windowed");
-                    Logger.Debug(" Added -windowed.");
                 }
-                else if (windowedcheck.IsChecked == false && borderlessWindowedValue == "1")
+                else if (windowedcheck.IsChecked == false && (borderlessWindowedValue == true || ffWindowed || ffBorderless || ffFocusLossless))
                 {
                     Logger.Debug(" User chose to disable Borderless Windowed but it's enabled in the ini, disabling it...");
                     if (ffix)
                     {
+                        iniParser.EditValue("MAIN", "Windowed", "0");
                         iniParser.EditValue("MAIN", "BorderlessWindowed", "0");
+                        iniParser.EditValue("MAIN", "BlockOnLostFocus", "1");
                     }
                     else
                     {
