@@ -9,20 +9,15 @@ using System.IO;
 using System.Management;
 using System.Net.Http;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Input;
 using GTAIVSetupUtilityWPF.Common;
 using GTAIVSetupUtilityWPF.Functions;
 using System.Threading.Tasks;
-using PromptDialog;
 using System.Net;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using System.Threading;
 using System.ComponentModel;
-using System.Reflection;
-using System.Windows.Shapes;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -593,14 +588,13 @@ namespace GTAIVSetupUtilityWPF
             using (GZipInputStream gzipStream = new GZipInputStream(fsIn))
             using (TarInputStream tarStream = new TarInputStream(gzipStream))
             {
-                Logger.Debug("3");
                 TarEntry entry;
                 while ((entry = tarStream.GetNextEntry()) != null)
                 {
                     Logger.Debug(entry.Name);
                     if (entry.Name.EndsWith("x32/d3d9.dll"))
                     {
-                        using (FileStream fsOut = File.Create(System.IO.Path.Combine(installationDir, "d3d9.dll")))
+                        using (FileStream fsOut = File.Create(Path.Combine(installationDir, "d3d9.dll")))
                         {
                             tarStream.CopyEntryContents(fsOut);
                             Logger.Debug(" d3d9.dll extracted into the game folder.");
@@ -614,7 +608,7 @@ namespace GTAIVSetupUtilityWPF
             File.Delete("dxvk.tar.gz");
 
             Logger.Debug(" Writing the dxvk.conf...");
-            using (StreamWriter confWriter = File.CreateText(System.IO.Path.Combine(installationDir, "dxvk.conf")))
+            using (StreamWriter confWriter = File.CreateText(Path.Combine(installationDir, "dxvk.conf")))
             {
                 foreach (string option in dxvkConf)
                 {
