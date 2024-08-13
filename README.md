@@ -22,7 +22,8 @@ This version is a re-write of the now-deprecated [Python version](https://github
 - Properly enables/disables Borderless Fullscreen if using ZolikaPatch or FusionFix
 - Warns the user if they have IVSDK .NET and DXVK installed at the same time as RTSS is enabled.
 - Prompts the user to fix GFWL achievements if using GFWL (or revert fixing them; this will trigger if using XLivelessNess at the moment).
-- Removing `GFWLDLCs.asi` and enabling `LoadDLCs` if ZolikaPatch is present.
+- Removing `GFWLDLCs.asi` and enabling `LoadDLCs` if up-to-date ZolikaPatch is present.
+- Detect obsolete `commandline.txt` options and remove them accordingly.
 - Warn the user if they're using `commandline.txt` on Steam version.
 - Warn the user if they're using the outdated `dsound.dll` and prompt them to downoad the latest Ultimate ASI Loader.
 - Providing tips for what the launch options actually do. And *not* providing useless options.
