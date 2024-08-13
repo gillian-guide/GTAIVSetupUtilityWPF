@@ -22,6 +22,7 @@ using ICSharpCode.SharpZipLib.Tar;
 using System.Threading;
 using System.ComponentModel;
 using System.Reflection;
+using System.Windows.Shapes;
 // hi here, i'm an awful coder, so please clean up for me if it really bothers you
 
 namespace GTAIVSetupUtilityWPF
@@ -206,6 +207,22 @@ namespace GTAIVSetupUtilityWPF
                     string gamever = AppVersionGrabber.GetFileVersion($"{dialog.FileName}\\GTAIV.exe");
                     if (gamever.StartsWith("1, 0") || (gamever.StartsWith("1.2")))
                     {
+                        if (File.Exists($"{dialog.FileName}\\commandline.txt")) {
+                            Logger.Debug(" Filtering commandline.txt from garbage because I know *somebody* will have a garbage commandline.");
+                            string[] lines = File.ReadAllLines($"{dialog.FileName}\\commandline.txt");
+                            var filteredLines = lines.Where(line =>
+                                !line.Contains("-no_3GB") &&
+                                !line.Contains("-noprecache") &&
+                                !line.Contains("-notimefix") &&
+                                !line.Contains("-novblank") &&
+                                !line.Contains("-percentvidmem") &&
+                                !line.Contains("-reserve") &&
+                                !line.Contains("-reservedApp") &&
+                                !line.Contains("-disableimposters") &&
+                                !line.Contains("-forcer2vb") &&
+                                !line.Contains("-minspecaudio"));
+                                File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
+                        }
                         if (gamever.StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
                         else {
                             Logger.Debug(" Folder contains an exe of Steam Version.");
@@ -250,6 +267,15 @@ namespace GTAIVSetupUtilityWPF
                             {
                                 Logger.Debug(" Detected d3d9.dll - likely DXVK is already installed.");
                                 installdxvkbtn.Content = "Reinstall DXVK";
+                                monitordetailcheck.IsChecked = true;
+                                if (File.Exists($"{dialog.FileName}\\commandline.txt"))
+                                {
+                                    Logger.Debug(" Filtering commandline.txt from -managed incase present.");
+                                    string[] lines = File.ReadAllLines($"{dialog.FileName}\\commandline.txt");
+                                    var filteredLines = lines.Where(line =>
+                                        !line.Contains("-managed"));
+                                    File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
+                                }
                                 if (isIVSDKInstalled && !string.IsNullOrEmpty(rtssconfig))
                                 {
                                     IniEditor rtssGTAIVConfig = new IniEditor(rtssconfig);
@@ -284,6 +310,15 @@ namespace GTAIVSetupUtilityWPF
                                 iniModify = !string.IsNullOrEmpty(fusionFixCfgPath) ? fusionFixCfgPath : fusionFixPath;
                                 ffix = true;
                                 Logger.Debug(" User has FusionFix.");
+                                if (File.Exists($"{dialog.FileName}\\commandline.txt"))
+                                {
+                                    Logger.Debug(" Filtering commandline.txt from -windowed and -noBlockOnLostFocus incase present.");
+                                    string[] lines = File.ReadAllLines($"{dialog.FileName}\\commandline.txt");
+                                    var filteredLines = lines.Where(line =>
+                                        !line.Contains("-windowed") &&
+                                        !line.Contains("-noBlockOnLostFocus"));
+                                    File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
+                                }
                                 break;
                             case (false, true):
                                 iniModify = zolikaPatchPath;
@@ -366,15 +401,44 @@ namespace GTAIVSetupUtilityWPF
                                     "BuildingAlphaFix",
                                     "EmissiveLerpFix",
                                     "BikePhoneAnimsFix",
+                                    "BorderlessWindowed",
+                                    "BuildingAlphaFix",
+                                    "BuildingDynamicShadows",
+                                    "CarDynamicShadowFix",
+                                    "CarPartsShadowFix",
                                     "CutsceneFixes",
+                                    "DoNotPauseOnMinimize",
+                                    "DualVehicleHeadlights",
+                                    "EmissiveLerpFix",
+                                    "EpisodicVehicleSupport",
+                                    "EpisodicWeaponSupport",
+                                    "ForceCarHeadlightShadows",
+                                    "ForceDynamicShadowsEverywhere",
                                     "HighFPSBikePhysicsFix",
                                     "HighFPSSpeedupFix",
+                                    "HighQualityReflections",
+                                    "ImprovedShaderStreaming",
+                                    "MouseFix",
+                                    "NewMemorySystem",
+                                    "NoLiveryLimit",
+                                    "OutOfCommissionFix",
+                                    "PoliceEpisodicWeaponSupport",
+                                    "RemoveBoundingBoxCulling",
                                     "ReversingLightFix",
-                                    "OutOfComissionFix",
                                     "SkipIntro",
                                     "SkipMenu"
                                 };
 
+                                if (File.Exists($"{dialog.FileName}\\commandline.txt"))
+                                {
+                                    Logger.Debug(" Filtering commandline.txt from -windowed and -noBlockOnLostFocus incase present.");
+                                    string[] lines = File.ReadAllLines($"{dialog.FileName}\\commandline.txt");
+                                    var filteredLines = lines.Where(line =>
+                                        !line.Contains("-windowed") &&
+                                        !line.Contains("-noBlockOnLostFocus"));
+                                    File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
+
+                                }
                                 if (iniParsertt.ReadValue("Options", "RestoreDeathMusic") == "N/A")
                                 {
                                     var result = MessageBox.Show("Your ZolikaPatch is outdated.\n\nDo you wish to download the latest version? (this will redirect to Zolika1351's website for manual download)", "ZolikaPatch is outdated", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -393,15 +457,15 @@ namespace GTAIVSetupUtilityWPF
                                         Environment.Exit(0);
                                     }
                                 }
-
                                 if (File.Exists($"{dialog.FileName}\\GFWLDLC.asi"))
                                 {
-                                    File.Delete($"{dialog.FileName}\\GFWLDLC.asi");
+                                    if (iniParsertt.ReadValue("Options", "LoadDLCs") == "0" && iniParsertt.ReadValue("Options", "LoadDLCs") != "N/A")
+                                    {
+                                        iniParsertt.EditValue("Options", "LoadDLCs", "1");
+                                        File.Delete($"{dialog.FileName}\\GFWLDLC.asi");
+                                    }
                                 }
-                                if (iniParsertt.ReadValue("Options", "LoadDLCs") == "0")
-                                {
-                                    iniParsertt.EditValue("Options", "LoadDLCs", "1");
-                                }
+
                                 if (File.Exists($"{dialog.FileName}\\dinput8.dll") && !File.Exists($"{dialog.FileName}\\xlive.dll"))
                                 {
                                     var result = MessageBox.Show("You appear to be using GFWL. Do you wish to remove Steam Achievements (if exists) and fix ZolikaPatch options to receive GFWL achievements?\n\nPressing 'No' can revert this if you agreed to this earlier.", "GFWL Achievements", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -982,6 +1046,10 @@ namespace GTAIVSetupUtilityWPF
                 launchoptions.Add($"-height {height}");
                 launchoptions.Add($"-refreshrate {refreshRate}");
                 Logger.Debug($" Added -width {width}, -height {height}, -refreshrate {refreshRate}.");
+            }
+            if (!File.Exists($"{gamedirectory.Text}\\d3d9.dll"))
+            {
+                launchoptions.Add("-managed");
             }
             if (isretail)
             {
