@@ -252,6 +252,8 @@ namespace GTAIVSetupUtilityWPF
                         tipsnote.TextDecorations = TextDecorations.Underline;
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
+                        directorybtn.IsDefault = false;
+                        installdxvkbtn.IsDefault = true;
 
                         isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault()!=null;
                         bool isDXVKInstalled = File.Exists($"{dialog.FileName}\\d3d9.dll");
@@ -263,6 +265,9 @@ namespace GTAIVSetupUtilityWPF
                             {
                                 Logger.Debug(" Detected d3d9.dll - likely DXVK is already installed.");
                                 installdxvkbtn.Content = "Reinstall DXVK";
+                                installdxvkbtn.IsDefault = false;
+                                installdxvkbtn.FontWeight = FontWeights.Normal;
+                                launchoptionsbtn.IsDefault = true;
                                 monitordetailcheck.IsChecked = true;
                                 if (File.Exists($"{dialog.FileName}\\commandline.txt"))
                                 {
@@ -655,7 +660,7 @@ namespace GTAIVSetupUtilityWPF
             ExtractDXVK(gamedirectory.Text, dxvkconf);
         }
             private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
-        {
+            {
             Logger.Debug(" User clicked on the Install DXVK button.");
             dxvkPanel.IsEnabled = false;
             installdxvkbtn.Content = "Installing...";
@@ -885,6 +890,8 @@ namespace GTAIVSetupUtilityWPF
             }
             Logger.Debug(" DXVK installed, editing the launch options toggles and enabling the panels back...");
             installdxvkbtn.Content = "Reinstall DXVK";
+            installdxvkbtn.IsDefault = false;
+            launchoptionsbtn.IsDefault = true;
             dxvkPanel.IsEnabled = true;
             windowedcheck.IsChecked = true;
             vidmemcheck.IsChecked = true;
