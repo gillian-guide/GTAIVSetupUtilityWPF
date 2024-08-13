@@ -528,9 +528,11 @@ namespace GTAIVSetupUtilityWPF
             using (GZipInputStream gzipStream = new GZipInputStream(fsIn))
             using (TarInputStream tarStream = new TarInputStream(gzipStream))
             {
+                Logger.Debug("3");
                 TarEntry entry;
                 while ((entry = tarStream.GetNextEntry()) != null)
                 {
+                    Logger.Debug(entry.Name);
                     if (entry.Name.EndsWith("x32/d3d9.dll"))
                     {
                         using (FileStream fsOut = File.Create(Path.Combine(installationDir, "d3d9.dll")))
@@ -575,7 +577,7 @@ namespace GTAIVSetupUtilityWPF
                     }
                 case (true, false):
                     {
-                        downloadUrl = parsed[0].GetProperty("assets").GetProperty("links")[0].GetProperty("url").GetString();
+                        downloadUrl = parsed[0].GetProperty("assets").GetProperty("links").EnumerateArray().First(link => link.GetProperty("name").GetString().Contains("tar.gz")).GetProperty("url").GetString();
                         break;
                     }
                 case (false, true):
