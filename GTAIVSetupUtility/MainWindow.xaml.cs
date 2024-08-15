@@ -399,8 +399,6 @@ namespace GTAIVSetupUtilityWPF
                                 bool optToChangeOptions = false;
                                 List<string> incompatibleOptions = new List<string>()
                                 {
-                                    "BuildingAlphaFix",
-                                    "EmissiveLerpFix",
                                     "BikePhoneAnimsFix",
                                     "BorderlessWindowed",
                                     "BuildingAlphaFix",
@@ -415,6 +413,7 @@ namespace GTAIVSetupUtilityWPF
                                     "EpisodicWeaponSupport",
                                     "ForceCarHeadlightShadows",
                                     "ForceDynamicShadowsEverywhere",
+                                    "ForceShadowsOnObjects",
                                     "HighFPSBikePhysicsFix",
                                     "HighFPSSpeedupFix",
                                     "HighQualityReflections",
