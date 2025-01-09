@@ -23,8 +23,8 @@
                 <CheckBox x:Name="tipscheck" Margin="5,0,0,0" IsChecked="True" HorizontalAlignment="Right">Tips</CheckBox>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                <StackPanel x:Name="dxvkPanel" IsEnabled="False">
-                    <CheckBox Content="Install the async patch" x:Name="asynccheckbox" Margin="0,0,0,0" HorizontalAlignment="Left" IsChecked="True" Click="async_Click"/>
+                <StackPanel x:Name="dxvkPanel" IsEnabled="False" VerticalAlignment="Bottom">
+                    <CheckBox Content="Install the async patch" x:Name="asynccheckbox" Margin="0,0,0,0" HorizontalAlignment="Left" IsChecked="False" IsEnabled="False" Visibility="Collapsed" Click="async_Click"/>
                     <CheckBox Content="Enable VSync" x:Name="vsynccheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="vsync_Click"/>
                     <CheckBox Content="Set Max Frame Latency" x:Name="framelatencycheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="latency_Click"/>
                     <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click" FontWeight="SemiBold"/>

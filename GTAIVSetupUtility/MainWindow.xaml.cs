@@ -25,7 +25,7 @@ namespace GTAIVSetupUtilityWPF
     public partial class MainWindow : Window
     {
 
-        (int, int, bool, bool, bool, bool) resultvk;
+        (int, int, bool, bool, bool, bool, bool) resultvk;
         int installdxvk;
         int vram1;
         int vram2;
@@ -61,7 +61,120 @@ namespace GTAIVSetupUtilityWPF
             Logger.Info(" Initializing the vulkan check...");
             resultvk = VulkanChecker.VulkanCheck();
             Logger.Info(" Vulkan check finished!");
-            if (resultvk.Item6 && resultvk.Item1 == 2) { asynccheckbox.IsChecked = false; Logger.Debug($" User has an NVIDIA GPU, untoggling the async checkbox..."); }
+
+            int vkDgpuDxvkSupport = resultvk.Item1;
+            int vkIgpuDxvkSupport = resultvk.Item2;
+            bool igpuOnly = resultvk.Item3;
+            bool dgpuOnly = resultvk.Item4;
+            bool intelIgpu = resultvk.Item5;
+            bool nvidiaGpu = resultvk.Item6;
+            bool gplSupport = resultvk.Item7;
+
+            if (igpuOnly && !dgpuOnly)
+            {
+                switch (vkIgpuDxvkSupport)
+                {
+                    case 1:
+                        Logger.Debug(" User's PC only has an iGPU. Setting Install DXVK to 1.");
+                        installdxvk = 1;
+                        break;
+                    case 2:
+                        Logger.Debug(" User's PC only has an iGPU. Setting Install DXVK to 2.");
+                        installdxvk = 2;
+                        break;
+                }
+            }
+            else if (!igpuOnly && dgpuOnly)
+            {
+                switch (vkDgpuDxvkSupport)
+                {
+                    case 1:
+                        Logger.Debug(" User's PC only has a dGPU. Setting Install DXVK to 1.");
+                        installdxvk = 1;
+                        break;
+                    case 2:
+                        Logger.Debug(" User's PC only has a dGPU. Setting Install DXVK to 2.");
+                        installdxvk = 2;
+                        break;
+                }
+            }
+            else if (!igpuOnly && !dgpuOnly)
+            {
+                Logger.Debug(" User's PC has both an iGPU and a dGPU. Doing further checks...");
+                switch ((vkDgpuDxvkSupport, vkIgpuDxvkSupport))
+                {
+                    case (0, 1):
+                    case (0, 2):
+                        Logger.Debug(" User PC's iGPU supports DXVK, but their dGPU does not - asking them what to do...");
+                        var result = MessageBox.Show("Your iGPU supports DXVK but your GPU doesn't - do you still wish to install?", "Install DXVK?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            Logger.Debug(" User chose to install DXVK for the iGPU");
+                            dxvkonigpu = true;
+                            switch (vkIgpuDxvkSupport)
+                            {
+                                case 1:
+                                    Logger.Debug(" Setting Install DXVK to 1.");
+                                    installdxvk = 1;
+                                    break;
+                                case 2:
+                                    Logger.Debug(" Setting Install DXVK to 2.");
+                                    installdxvk = 2;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Logger.Debug(" User chose not to install DXVK.");
+                        }
+                        break;
+                    case (1, 2):
+                        Logger.Debug(" User PC's iGPU supports DXVK, but their dGPU supports an inferior version - asking them what to do...");
+                        var resultVer = MessageBox.Show("Your iGPU supports a greater version of DXVK than your GPU - which version do you wish to install?\n\nPress 'Yes' to install the version matching your GPU.\n\nPress 'No' to install the version matching your iGPU instead.", "Which DXVK version to install?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        if (resultVer == MessageBoxResult.Yes)
+                        {
+                            Logger.Debug(" User chose to install DXVK for the dGPU. Setting Install DXVK to 1.");
+                            installdxvk = 1;
+                        }
+                        else
+                        {
+                            Logger.Debug(" User chose to install DXVK for the iGPU. Setting Install DXVK to 2.");
+                            dxvkonigpu = true;
+                            installdxvk = 2;
+                        }
+                        break;
+                    case (2, 2):
+                    case (1, 1):
+                    case (2, 1):
+                    case (2, 0):
+                        Logger.Debug(" User's GPU supports the same or a better version of DXVK as the iGPU.");
+                        switch (vkDgpuDxvkSupport)
+                        {
+                            case 1:
+                                Logger.Debug(" Setting Install DXVK to 1.");
+                                installdxvk = 1;
+                                break;
+                            case 2:
+                                Logger.Debug(" Setting Install DXVK to 2.");
+                                installdxvk = 2;
+                                break;
+                        }
+                        break;
+                }
+            }
+
+            if (intelIgpu && igpuOnly)
+            {
+                Logger.Debug(" User's PC only has an Intel iGPU. Prompting them to install DXVK 1.10.1.");
+                MessageBoxResult result = MessageBox.Show("Your PC only has an Intel iGPU on it. While it does support more modern versions on paper, it's reported that DXVK 1.10.1 might be your only supported version. Do you wish to install it?\n\nIf 'No' is selected, DXVK will be installed following the normal procedure.", "Message", MessageBoxButton.YesNo);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    Logger.Debug(" Setting Install DXVK to 3 - a special case to install 1.10.1 for Intel iGPU's.");
+                    installdxvk = 3;
+                }
+            }
+            if (!gplSupport || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true;  ; Logger.Debug($" User has an NVIDIA GPU, untoggling the async checkbox..."); }
         }
 
 
@@ -670,116 +783,6 @@ namespace GTAIVSetupUtilityWPF
                 {
                     Logger.Info(" User has IVSDK .NET installed and RTSS enabled at the same time and wants to install DXVK. Showing the warning prompt.");
                     MessageBox.Show($"You currently have RivaTuner Statistics Server enabled (it might be a part of MSI Afterburner).\n\nTo avoid issues with the game launching when DXVK and IVSDK .NET are both installed, go into your tray icons, press on the little monitor icon with the number 60, press 'Add' in bottom left, select GTA IV's executable and set Application detection level to 'None'.\n\nIf you want the statistics, set it to Low and restart the tool, with the game running.");
-                }
-            }
-            int dgpu_dxvk_support = resultvk.Item1;
-            int igpu_dxvk_support = resultvk.Item2;
-            bool igpuonly = resultvk.Item3;
-            bool dgpuonly = resultvk.Item4;
-            bool inteligpu = resultvk.Item5;
-
-            if (igpuonly && !dgpuonly)
-            {
-                switch (igpu_dxvk_support)
-                {
-                    case 1:
-                        Logger.Debug(" User's PC only has an iGPU. Setting Install DXVK to 1.");
-                        installdxvk = 1;
-                        break;
-                    case 2:
-                        Logger.Debug(" User's PC only has an iGPU. Setting Install DXVK to 2.");
-                        installdxvk = 2;
-                        break;
-                }
-            }
-            else if (!igpuonly && dgpuonly)
-            {
-                switch (dgpu_dxvk_support)
-                {
-                    case 1:
-                        Logger.Debug(" User's PC only has a dGPU. Setting Install DXVK to 1.");
-                        installdxvk = 1;
-                        break;
-                    case 2:
-                        Logger.Debug(" User's PC only has a dGPU. Setting Install DXVK to 2.");
-                        installdxvk = 2;
-                        break;
-                }
-            }
-            else if (!igpuonly && !dgpuonly)
-            {
-                Logger.Debug(" User's PC has both an iGPU and a dGPU. Doing further checks...");
-                switch ((dgpu_dxvk_support, igpu_dxvk_support))
-                {
-                    case (0, 1):
-                    case (0, 2):
-                        Logger.Debug(" User PC's iGPU supports DXVK, but their dGPU does not - asking them what to do...");
-                        var result = MessageBox.Show("Your iGPU supports DXVK but your GPU doesn't - do you still wish to install?", "Install DXVK?", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            Logger.Debug(" User chose to install DXVK for the iGPU");
-                            dxvkonigpu = true;
-                            switch (igpu_dxvk_support)
-                            {
-                                case 1:
-                                    Logger.Debug(" Setting Install DXVK to 1.");
-                                    installdxvk = 1;
-                                    break;
-                                case 2:
-                                    Logger.Debug(" Setting Install DXVK to 2.");
-                                    installdxvk = 2;
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            Logger.Debug(" User chose not to install DXVK.");
-                        }
-                        break;
-                    case (1, 2):
-                        Logger.Debug(" User PC's iGPU supports DXVK, but their dGPU supports an inferior version - asking them what to do...");
-                        var resultVer = MessageBox.Show("Your iGPU supports a greater version of DXVK than your GPU - which version do you wish to install?\n\nPress 'Yes' to install the version matching your GPU.\n\nPress 'No' to install the version matching your iGPU instead.", "Which DXVK version to install?", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                        if (resultVer == MessageBoxResult.Yes)
-                        {
-                            Logger.Debug(" User chose to install DXVK for the dGPU. Setting Install DXVK to 1.");
-                            installdxvk = 1;
-                        }
-                        else
-                        {
-                            Logger.Debug(" User chose to install DXVK for the iGPU. Setting Install DXVK to 2.");
-                            dxvkonigpu = true;
-                            installdxvk = 2;
-                        }
-                        break;
-                    case (2, 2):
-                    case (1, 1):
-                    case (2, 1):
-                    case (2, 0):
-                        Logger.Debug(" User's GPU supports the same or a better version of DXVK as the iGPU.");
-                        switch (dgpu_dxvk_support)
-                        {
-                            case 1:
-                                Logger.Debug(" Setting Install DXVK to 1.");
-                                installdxvk = 1;
-                                break;
-                            case 2:
-                                Logger.Debug(" Setting Install DXVK to 2.");
-                                installdxvk = 2;
-                                break;
-                        }
-                        break;
-                }
-            }
-
-            if (inteligpu && igpuonly)
-            {
-                Logger.Debug(" User's PC only has an Intel iGPU. Prompting them to install DXVK 1.10.1.");
-                MessageBoxResult result = MessageBox.Show("Your PC only has an Intel iGPU on it. While it does support more modern versions on paper, it's reported that DXVK 1.10.1 might be your only supported version. Do you wish to install it?\n\nIf 'No' is selected, DXVK will be installed following the normal procedure.", "Message", MessageBoxButton.YesNo);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    Logger.Debug(" Setting Install DXVK to 3 - a special case to install 1.10.1 for Intel iGPU's.");
-                    installdxvk = 3;
                 }
             }
 
