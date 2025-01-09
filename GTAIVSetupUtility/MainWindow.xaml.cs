@@ -969,19 +969,25 @@ namespace GTAIVSetupUtilityWPF
                 try
                 {
                     ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-                    foreach (var tempvram in from ManagementObject obj in searcher.Get()
-                                             let adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A"
-                                             let tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1)
-                                             select tempvram)
+                    var videoControllers = searcher.Get();
+
+                    foreach (ManagementObject obj in videoControllers)
                     {
-                        if (firstgpu)
+                        var adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A";
+                        if (adapterRAM != "N/A")
                         {
-                            vram1 = tempvram;
-                            firstgpu = false;
-                        }
-                        else if (tempvram > vram1 || tempvram > vram2)
-                        {
-                            vram2 = tempvram;
+                            var tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1);
+                            if (firstgpu)
+                            {
+                                Logger.Debug($"GPU0 has {tempvram}MB of VRAM");
+                                vram1 = tempvram;
+                                firstgpu = false;
+                            }
+                            else if (tempvram > vram1 || tempvram > vram2)
+                            {
+                                Logger.Debug($"Next GPU has {tempvram}MB of VRAM");
+                                vram2 = tempvram;
+                            }
                         }
                     }
 
