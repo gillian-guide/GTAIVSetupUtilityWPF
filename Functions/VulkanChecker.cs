@@ -22,16 +22,15 @@ namespace GTAIVSetupUtilityWPF.Functions
             uint minor = apiversion >> 12 & 0x3ff;
             return (Convert.ToInt32(major), Convert.ToInt32(minor));
         }
-        public static (int, int, bool, bool, bool, bool, bool) VulkanCheck()
+        public static (int, int, int, bool, bool, bool) VulkanCheck()
         {
             int gpucount = 0;
+            int gplSupport = 0;
             int vkDgpuDxvkSupport = 0;
             int vkIgpuDxvkSupport = 0;
             bool igpuOnly = true;
             bool dgpuOnly = true;
             bool intelIgpu = false;
-            bool nvidiaGpu = false;
-            bool gplSupport = false;
             bool atLeastOneGPUSucceededVulkanInfo = false;
             bool atLeastOneGPUSucceededJson = false;
             bool atLeastOneGPUFailed = false;
@@ -105,7 +104,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             {
                 MessageBox.Show("The vulkaninfo check failed entirely. This usually means none of your GPU's support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
                 Logger.Error($" Running vulkaninfo failed entirely! User likely has outdated drivers or an extremely old GPU.");
-                return (0, 0, false, false, false, false, false);
+                return (0, 0, 0, false, false, false);
             }
 
             Logger.Debug($" Analyzing the vulkaninfo for every .json generated...");
@@ -147,11 +146,6 @@ namespace GTAIVSetupUtilityWPF.Functions
                             int vulkanVerMinor = vulkanVer.Item2;
 
                             Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
-                            if (deviceName.Contains("NVIDIA"))
-                            {
-                                Logger.Info($" GPU{x} is an NVIDIA GPU.");
-                                nvidiaGpu = true;
-                            }
                             try
                             {
                                 // a proper code wouldn't rely on a try-catch iteration here but rather just do an if-else check, but i'm stupid and i don't want to refactor any of this, teehee <3
@@ -208,7 +202,16 @@ namespace GTAIVSetupUtilityWPF.Functions
                             if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean() == true)
                             {
                                 Logger.Info($" GPU{x} supports GPL.");
-                                gplSupport = true;
+                                gplSupport = 1;
+                                if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean() == true)
+                                {
+                                    Logger.Debug($" GPU{x} supports GPL in full.");
+                                    gplSupport = 2;
+                                }
+                                else
+                                {
+                                    MessageBox.Show("Your GPU supports GPL, but not Fast Linking - therefore, you will experience stutters.\n\nUsually, this indicates that you're using an AMD GPU but with outdated drivers - try updating your drivers and relaunching the setup utility.");
+                                }
                             }
                         }
 
@@ -254,7 +257,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             {
                 MessageBox.Show("The vulkaninfo check failed partially. This usually means one of your GPU's may support Vulkan but have outdated drivers. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
                 Logger.Error($" Running vulkaninfo failed partially. User likely has outdated drivers or an extremely old GPU.");
-                return (0, 0, false, false, false, false, false);
+                return (0, 0, 0, false, false, false);
             }
             if (atLeastOneGPUFailed && igpuOnly)
             {
@@ -264,7 +267,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             {
                 MessageBox.Show("The vulkaninfo check failed for one of the GPU's but succeeded for the rest. This usually means your secondary GPU or the iGPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is available with the assumption that you're going to be playing off the GPU that didn't fail the vulkaninfo check (usually your main GPU).");
             }
-            return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, igpuOnly, dgpuOnly, intelIgpu, nvidiaGpu, gplSupport);
+            return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu);
         }
     }
 }

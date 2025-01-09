@@ -25,7 +25,7 @@ namespace GTAIVSetupUtilityWPF
     public partial class MainWindow : Window
     {
 
-        (int, int, bool, bool, bool, bool, bool) resultvk;
+        (int, int, int, bool, bool, bool) resultvk;
         int installdxvk;
         int vram1;
         int vram2;
@@ -64,11 +64,10 @@ namespace GTAIVSetupUtilityWPF
 
             int vkDgpuDxvkSupport = resultvk.Item1;
             int vkIgpuDxvkSupport = resultvk.Item2;
-            bool igpuOnly = resultvk.Item3;
-            bool dgpuOnly = resultvk.Item4;
-            bool intelIgpu = resultvk.Item5;
-            bool nvidiaGpu = resultvk.Item6;
-            bool gplSupport = resultvk.Item7;
+            int gplSupport = resultvk.Item3;
+            bool igpuOnly = resultvk.Item4;
+            bool dgpuOnly = resultvk.Item5;
+            bool intelIgpu = resultvk.Item6;
 
             if (igpuOnly && !dgpuOnly)
             {
@@ -174,7 +173,7 @@ namespace GTAIVSetupUtilityWPF
                     installdxvk = 3;
                 }
             }
-            if (!gplSupport || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true;  ; Logger.Debug($" User has an NVIDIA GPU, untoggling the async checkbox..."); }
+            if (gplSupport !=2 || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true;  ; Logger.Debug($" User's GPU doesn't support GPL in full, allow enabling async."); }
         }
 
 
@@ -199,7 +198,7 @@ namespace GTAIVSetupUtilityWPF
             if (tipscheck.IsChecked == true)
             {
                 Logger.Debug(" Displaying a tip...");
-                MessageBox.Show("DXVK with async should provide better performance for most, but under some conditions it may provide worse performance instead. Without async, you might stutter the first time you see different areas. It won't stutter the next time in the same area.\n\nNote, however, that performance on NVIDIA when using DXVK 2.0+ may be worse. Feel free to experiment by re-installing DXVK.");
+                MessageBox.Show("DXVK-async is the next best alternative to stutter-less experience - since your GPU doesn't support GPL with Fast Linking, you can reduce stutter with async shader building, which will be a little faster than traditional shader building.");
             }
         }
         private void vsync_Click(object sender, RoutedEventArgs e)
@@ -291,13 +290,13 @@ namespace GTAIVSetupUtilityWPF
             Logger.Debug(" User opened the About window.");
             MessageBox.Show(
                 "This software is made by Gillian for the Modding Guide. Below is debug text, you don't need it normally.\n\n" +
-                $"Install DXVK: {installdxvk}\n" +
+                $"DXVK to install: {installdxvk}\n" +
                 $"dGPU DXVK Support: {resultvk.Item1}\n" +
                 $"iGPU DXVK Support: {resultvk.Item2}\n" +
-                $"iGPU Only: {resultvk.Item3}\n" +
-                $"dGPU Only: {resultvk.Item4}\n" +
-                $"Intel iGPU: {resultvk.Item5}\n" +
-                $"NVIDIA GPU: {resultvk.Item6}\n\n" +
+                $"GPL support state: {resultvk.Item3}\n" +
+                $"iGPU Only: {resultvk.Item4}\n" +
+                $"dGPU Only: {resultvk.Item5}\n" +
+                $"Intel iGPU: {resultvk.Item6}\n\n" +
                 $"Version: {GetAssemblyVersion()}",
                 "Information");
         }
@@ -991,7 +990,7 @@ namespace GTAIVSetupUtilityWPF
                         }
                     }
 
-                    if (resultvk.Item3 || resultvk.Item4)
+                    if (resultvk.Item4 || resultvk.Item5)
                     {
                         if (gb3check.IsChecked == true)
                         {
