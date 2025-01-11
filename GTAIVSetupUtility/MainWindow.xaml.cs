@@ -734,7 +734,7 @@ namespace GTAIVSetupUtilityWPF
             Logger.Debug(" dxvk.conf successfully written to game folder.");
             extractfinished = true;
         }
-        private async Task downloaddxvk(string link, List<string> dxvkconf, bool gitlab, bool githubalt)
+        private async Task downloaddxvk(string link, List<string> dxvkconf, bool gitlab, bool githubalt, int release = 0)
         {
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Other");
@@ -747,12 +747,12 @@ namespace GTAIVSetupUtilityWPF
             {
                 case (false, false):
                     {
-                        downloadUrl = parsed.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
+                        downloadUrl = parsed.GetProperty("assets")[release].GetProperty("browser_download_url").GetString();
                         break;
                     }
                 case (true, false):
                     {
-                        downloadUrl = parsed[0].GetProperty("assets").GetProperty("links").EnumerateArray().First(link => link.GetProperty("name").GetString().Contains("tar.gz")).GetProperty("url").GetString();
+                        downloadUrl = parsed[release].GetProperty("assets").GetProperty("links").EnumerateArray().First(link => link.GetProperty("name").GetString().Contains("tar.gz")).GetProperty("url").GetString();
                         break;
                     }
                 case (false, true):
@@ -760,7 +760,6 @@ namespace GTAIVSetupUtilityWPF
                         downloadUrl = parsed.GetProperty("browser_download_url").GetString();
                         break;
                     }
-
             }
             InstallDXVK(downloadUrl!);
             while (!downloadfinished)
@@ -809,28 +808,28 @@ namespace GTAIVSetupUtilityWPF
                     /// we're using the "if" in each case because of the async checkbox
                     if (asynccheckbox.IsChecked == true)
                     {
-                        Logger.Info(" Installing DXVK-async 1.10.3...");
+                        Logger.Info(" Installing Latest DXVK-Sarek-async...");
                         dxvkconf.Add("dxvk.enableAsync = true");
-                        downloaddxvk("https://api.github.com/repos/Sporif/dxvk-async/releases/assets/73567231", dxvkconf, false, true);
+                        downloaddxvk("https://api.github.com/repos/pythonlover02/dxvk-Sarek/releases/latest", dxvkconf, false, false);
                         while (!extractfinished)
                         {
                             await Task.Delay(500);
                         }
                         extractfinished = false;
-                        MessageBox.Show($"DXVK-async 1.10.3 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
-                        Logger.Info(" DXVK-async 1.10.3 has been installed!");
+                        MessageBox.Show($"Latest DXVK-Sarek-async has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
+                        Logger.Info(" Latest DXVK-Sarek-async has been installed!");
                     }
                     else
                     {
-                        Logger.Info(" Installing DXVK 1.10.3...");
-                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/73461736", dxvkconf, false, true);
+                        Logger.Info(" Installing Latest DXVK-Sarek...");
+                        downloaddxvk("https://api.github.com/repos/pythonlover02/dxvk-Sarek/releases/latest", dxvkconf, false, false, 1);
                         while (!extractfinished)
                         {
                             await Task.Delay(500);
                         }
                         extractfinished = false;
-                        MessageBox.Show($"DXVK 1.10.3 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
-                        Logger.Info(" DXVK 1.10.3 has been installed!");
+                        MessageBox.Show($"Latest DXVK-Sarek has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
+                        Logger.Info(" Latest DXVK-Sarek has been installed!");
                     }
                     break;
                 case 2:
