@@ -7,7 +7,7 @@
 	<UseWPF>true</UseWPF>
 	<DebugType>embedded</DebugType>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-	<Version>1.7.1</Version>
+	<Version>1.8.2</Version>
 	<ApplicationIcon>Assets\ivlogo.ico</ApplicationIcon>
 	<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 	<Title>Gillian's GTA IV Setup Utility</Title>
