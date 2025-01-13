@@ -27,7 +27,10 @@
                     <CheckBox Content="Install the async patch" x:Name="asynccheckbox" Margin="0,0,0,0" HorizontalAlignment="Left" IsChecked="False" IsEnabled="False" Visibility="Collapsed" Click="async_Click"/>
                     <CheckBox Content="Enable VSync" x:Name="vsynccheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="vsync_Click"/>
                     <CheckBox Content="Set Max Frame Latency" x:Name="framelatencycheckbox" HorizontalAlignment="Left" Margin="0,5,0,0" IsChecked="True" Click="latency_Click"/>
-                    <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                        <Button Content="Install DXVK" x:Name="installdxvkbtn" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Width="160" Height="25" Click="installdxvkbtn_Click" FontWeight="SemiBold"/>
+                        <Button Content="Uninstall DXVK" x:Name="uninstalldxvkbtn" HorizontalAlignment="Left" Margin="2,5,0,0" VerticalAlignment="Top" Width="78" Height="25" FontSize="11" Click="uninstalldxvkbtn_Click" Visibility="Collapsed"/>
+                    </StackPanel>
                 </StackPanel>
                 <StackPanel x:Name="launchoptionsPanel" IsEnabled="False" Margin="5,0,0,0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,0">

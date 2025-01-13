@@ -49,7 +49,7 @@ namespace GTAIVSetupUtilityWPF
         }
         public MainWindow()
         {
-            if ( File.Exists("GTAIVSetupUtilityLog.txt")) { File.Delete("GTAIVSetupUtilityLog.txt"); }
+            if (File.Exists("GTAIVSetupUtilityLog.txt")) { File.Delete("GTAIVSetupUtilityLog.txt"); }
             NLog.LogManager.Setup().LoadConfiguration(builder =>
             {
                 builder.ForLogger().FilterMinLevel(LogLevel.Debug).WriteToFile(fileName: "GTAIVSetupUtilityLog.txt");
@@ -173,7 +173,7 @@ namespace GTAIVSetupUtilityWPF
                     installdxvk = 3;
                 }
             }
-            if (gplSupport !=2 || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true;  ; Logger.Debug($" User's GPU doesn't support GPL in full, allow enabling async."); }
+            if (gplSupport != 2 || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true; ; Logger.Debug($" User's GPU doesn't support GPL in full, allow enabling async."); }
         }
 
 
@@ -181,6 +181,17 @@ namespace GTAIVSetupUtilityWPF
         {
             return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString()
                 ?? String.Empty;
+        }
+
+        private void deletefiles(string directory, string[] filename)
+        {
+            foreach(string file in filename)
+            {
+                if (File.Exists($"{directory}/{file}"))
+                {
+                    File.Delete($"{directory}/{file}");
+                }
+            }
         }
 
         void client_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
@@ -329,17 +340,17 @@ namespace GTAIVSetupUtilityWPF
                                 !line.Contains("-disableimposters") &&
                                 !line.Contains("-forcer2vb") &&
                                 !line.Contains("-minspecaudio"));
-                                File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
+                            File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
                         }
                         if (gamever.StartsWith("1, 0")) { isretail = true; Logger.Debug(" Folder contains a retail exe."); }
                         else {
                             Logger.Debug(" Folder contains an exe of Steam Version.");
                             isretail = false;
-                            if (File.Exists($"{dialog.FileName}\\commandline.txt")){
+                            if (File.Exists($"{dialog.FileName}\\commandline.txt")) {
                                 Logger.Info("commandline.txt detected on Steam Version...");
                                 MessageBox.Show("You appear to have a commandline.txt, however your are using the Steam version which doesn't use that file. Consider moving these options to Steam Launch Options or launch arguments.");
                             }
-                          }
+                        }
                         if (isretail && !gamever.StartsWith("1, 0, 8"))
                         { vidmemcheck.IsEnabled = false; gb3check.IsEnabled = false; gb4check.IsEnabled = false; Logger.Debug(" Folder contains an exe of some pre-1.0.8.0 version. Disabling the -availablevidmem toggle."); }
                         if (File.Exists($"{dialog.FileName}\\dsound.dll"))
@@ -367,18 +378,21 @@ namespace GTAIVSetupUtilityWPF
                         directorybtn.IsDefault = false;
                         installdxvkbtn.IsDefault = true;
 
-                        isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault()!=null;
+                        isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault() != null;
                         bool isDXVKInstalled = File.Exists($"{dialog.FileName}\\d3d9.dll");
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
-                            { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
+                        { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
                         else
                         {
                             if (isDXVKInstalled)
                             {
-                                Logger.Debug(" Detected d3d9.dll - likely DXVK is already installed.");
+                                Logger.Debug(" Detected d3d9.dll - DXVK is likely already installed.");
                                 installdxvkbtn.Content = "Reinstall DXVK";
                                 installdxvkbtn.IsDefault = false;
                                 installdxvkbtn.FontWeight = FontWeights.Normal;
+                                installdxvkbtn.Width = 78;
+                                installdxvkbtn.FontSize = 11;
+                                uninstalldxvkbtn.Visibility = Visibility.Visible;
                                 launchoptionsbtn.IsDefault = true;
                                 monitordetailcheck.IsChecked = true;
                                 if (File.Exists($"{dialog.FileName}\\commandline.txt"))
@@ -470,7 +484,7 @@ namespace GTAIVSetupUtilityWPF
                                     if (result == MessageBoxResult.Yes)
                                     {
                                         if (File.Exists($"{dialog.FileName}\\SteamAchievements.asi"))
-                                       {
+                                        {
                                             if (!Directory.Exists($"{dialog.FileName}\\backup"))
                                             {
                                                 Directory.CreateDirectory($"{dialog.FileName}\\backup");
@@ -769,10 +783,15 @@ namespace GTAIVSetupUtilityWPF
             downloadfinished = false;
             ExtractDXVK(gamedirectory.Text, dxvkconf);
         }
-            private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
-            {
+        private async void installdxvkbtn_Click(object sender, RoutedEventArgs e)
+        {
             Logger.Debug(" User clicked on the Install DXVK button.");
             dxvkPanel.IsEnabled = false;
+
+            Logger.Info(" Removing old files if present.");
+            string[] filestodelete = ["d3d9.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
+            deletefiles(gamedirectory.Text, filestodelete);
+
             installdxvkbtn.Content = "Installing...";
             if (isIVSDKInstalled && !string.IsNullOrEmpty(rtssconfig))
             {
@@ -891,12 +910,31 @@ namespace GTAIVSetupUtilityWPF
             Logger.Debug(" DXVK installed, editing the launch options toggles and enabling the panels back...");
             installdxvkbtn.Content = "Reinstall DXVK";
             installdxvkbtn.IsDefault = false;
+            installdxvkbtn.FontWeight = FontWeights.Normal;
+            installdxvkbtn.Width = 78;
+            installdxvkbtn.FontSize = 11;
+            uninstalldxvkbtn.Visibility = Visibility.Visible;
             launchoptionsbtn.IsDefault = true;
-            dxvkPanel.IsEnabled = true;
-            windowedcheck.IsChecked = true;
-            vidmemcheck.IsChecked = true;
             monitordetailcheck.IsChecked = true;
+            dxvkPanel.IsEnabled = true;
+        }
 
+        private void uninstalldxvkbtn_Click(object sender, RoutedEventArgs e)
+        {
+            dxvkPanel.IsEnabled = false;
+            Logger.Info(" Removing all DXVK files present.");
+            string[] filestodelete = ["d3d9.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
+            deletefiles(gamedirectory.Text, filestodelete);
+            uninstalldxvkbtn.Visibility = Visibility.Collapsed;
+            installdxvkbtn.Content = "Install DXVK";
+            installdxvkbtn.IsDefault = true;
+            installdxvkbtn.FontWeight = FontWeights.SemiBold;
+            installdxvkbtn.Width = 160;
+            installdxvkbtn.FontSize = 12;
+            launchoptionsbtn.IsDefault = false;
+            monitordetailcheck.IsChecked = false;
+            MessageBox.Show("DXVK with all it's remains successfully uninstalled.");
+            dxvkPanel.IsEnabled = true;
         }
         private void setuplaunchoptions_Click(object sender, RoutedEventArgs e)
         {
