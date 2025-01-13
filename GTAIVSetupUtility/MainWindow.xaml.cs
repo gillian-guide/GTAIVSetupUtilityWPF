@@ -338,7 +338,7 @@ namespace GTAIVSetupUtilityWPF
                                 !line.Contains("-reserve") &&
                                 !line.Contains("-reservedApp") &&
                                 !line.Contains("-disableimposters") &&
-                                !line.Contains("-forcer2vb") &&
+                                !line.Contains("-force2vb") &&
                                 !line.Contains("-minspecaudio"));
                             File.WriteAllLines($"{dialog.FileName}\\commandline.txt", filteredLines);
                         }
