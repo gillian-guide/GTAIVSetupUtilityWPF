@@ -199,19 +199,33 @@ namespace GTAIVSetupUtilityWPF.Functions
                                 }
                             }
 
-                            if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean() == true)
+                            try
                             {
-                                Logger.Info($" GPU{x} supports GPL.");
-                                gplSupport = 1;
-                                if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean() == true)
+                                if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean() == true)
                                 {
-                                    Logger.Debug($" GPU{x} supports GPL in full.");
-                                    gplSupport = 2;
+                                    Logger.Info($" GPU{x} supports GPL.");
+                                    gplSupport = 1;
+                                    try
+                                    {
+                                        if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean() == true)
+                                        {
+                                            Logger.Debug($" GPU{x} supports GPL in full.");
+                                            gplSupport = 2;
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show("Your GPU supports GPL, but not Fast Linking - therefore, you will experience stutters.\n\nUsually, this indicates that you're using an AMD GPU but with outdated drivers - try updating your drivers and relaunching the setup utility.");
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        MessageBox.Show("Your GPU supports GPL, but not Fast Linking - therefore, you will experience stutters.\n\nUsually, this indicates that you're using an AMD GPU but with outdated drivers - try updating your drivers and relaunching the setup utility.");
+                                    }
                                 }
-                                else
-                                {
-                                    MessageBox.Show("Your GPU supports GPL, but not Fast Linking - therefore, you will experience stutters.\n\nUsually, this indicates that you're using an AMD GPU but with outdated drivers - try updating your drivers and relaunching the setup utility.");
-                                }
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Your GPU supports doesn't support GPL - therefore, you will experience stutters.\n\nThis may indicate that you're using outdated drivers - try updating your drivers and relaunching the setup utility.");
                             }
                         }
 
