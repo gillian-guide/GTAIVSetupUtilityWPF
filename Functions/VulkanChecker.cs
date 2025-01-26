@@ -22,7 +22,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             uint minor = apiversion >> 12 & 0x3ff;
             return (Convert.ToInt32(major), Convert.ToInt32(minor));
         }
-        public static (int, int, int, bool, bool, bool) VulkanCheck()
+        public static (int, int, int, bool, bool, bool, bool) VulkanCheck()
         {
             int gpucount = 0;
             int gplSupport = 0;
@@ -31,9 +31,12 @@ namespace GTAIVSetupUtilityWPF.Functions
             bool igpuOnly = true;
             bool dgpuOnly = true;
             bool intelIgpu = false;
+            bool enableasync = false;
             bool atLeastOneGPUSucceededVulkanInfo = false;
             bool atLeastOneGPUSucceededJson = false;
             bool atLeastOneGPUFailed = false;
+            bool atLeastOneGPUFailedGPL = false;
+            bool atLeastOneGPUFailedFL = false;
             List<int> listOfFailedGPUs = new List<int>();
             try
             {
@@ -104,7 +107,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             {
                 MessageBox.Show("The vulkaninfo check failed entirely. This usually means none of your GPU's support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
                 Logger.Error($" Running vulkaninfo failed entirely! User likely has outdated drivers or an extremely old GPU.");
-                return (0, 0, 0, false, false, false);
+                return (0, 0, 0, false, false, false, false);
             }
 
             Logger.Debug($" Analyzing the vulkaninfo for every .json generated...");
@@ -204,28 +207,28 @@ namespace GTAIVSetupUtilityWPF.Functions
                                 if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean() == true)
                                 {
                                     Logger.Info($" GPU{x} supports GPL.");
-                                    gplSupport = 1;
+                                    if (gplSupport<1)
+                                        gplSupport = 1;
                                     try
                                     {
                                         if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean() == true)
                                         {
                                             Logger.Debug($" GPU{x} supports GPL in full.");
-                                            gplSupport = 2;
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show("Your GPU supports GPL, but not Fast Linking - therefore, you will experience stutters.\n\nUsually, this indicates that you're using an AMD GPU but with outdated drivers - try updating your drivers and relaunching the setup utility.");
+                                            if (gplSupport<2)
+                                                gplSupport = 2;
                                         }
                                     }
                                     catch
                                     {
-                                        MessageBox.Show("Your GPU supports GPL, but not Fast Linking - therefore, you will experience stutters.\n\nUsually, this indicates that you're using an AMD GPU but with outdated drivers - try updating your drivers and relaunching the setup utility.");
+                                        Logger.Debug($" Catched an exception, this means GPU{x} doesn't support Fast Linking.");
+                                        atLeastOneGPUFailedFL = true;
                                     }
                                 }
                             }
                             catch
                             {
-                                MessageBox.Show("Your GPU supports doesn't support GPL - therefore, you will experience stutters.\n\nThis may indicate that you're using outdated drivers - try updating your drivers and relaunching the setup utility.");
+                                Logger.Debug($" Catched an exception, this means GPU{x} doesn't support GPL.");
+                                atLeastOneGPUFailedGPL = true;
                             }
                         }
 
@@ -271,7 +274,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             {
                 MessageBox.Show("The vulkaninfo check failed partially. This usually means one of your GPU's may support Vulkan but have outdated drivers. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
                 Logger.Error($" Running vulkaninfo failed partially. User likely has outdated drivers or an extremely old GPU.");
-                return (0, 0, 0, false, false, false);
+                return (0, 0, 0, false, false, false, false);
             }
             if (atLeastOneGPUFailed && igpuOnly)
             {
@@ -281,7 +284,12 @@ namespace GTAIVSetupUtilityWPF.Functions
             {
                 MessageBox.Show("The vulkaninfo check failed for one of the GPU's but succeeded for the rest. This usually means your secondary GPU or the iGPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is available with the assumption that you're going to be playing off the GPU that didn't fail the vulkaninfo check (usually your main GPU).");
             }
-            return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu);
+            if ((atLeastOneGPUFailedGPL || atLeastOneGPUFailedGPL) && gplSupport == 2)
+            {
+                MessageBox.Show("The GPL check failed for one of the GPUs but Fast Linking is supported by at least one of them. This usually means your secondary GPU or the iGPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe tool will proceed with the assumption that you're going to be playing off the GPU that didn't fail the GPL check (usually your main GPU), but provide options for async just incase.");
+                enableasync = true;
+            }
+            return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu, enableasync);
         }
     }
 }

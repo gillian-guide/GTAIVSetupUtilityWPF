@@ -25,7 +25,7 @@ namespace GTAIVSetupUtilityWPF
     public partial class MainWindow : Window
     {
 
-        (int, int, int, bool, bool, bool) resultvk;
+        (int, int, int, bool, bool, bool, bool) resultvk;
         int installdxvk;
         int vram1;
         int vram2;
@@ -68,6 +68,7 @@ namespace GTAIVSetupUtilityWPF
             bool igpuOnly = resultvk.Item4;
             bool dgpuOnly = resultvk.Item5;
             bool intelIgpu = resultvk.Item6;
+            bool allowasync = resultvk.Item7;
 
             if (igpuOnly && !dgpuOnly)
             {
@@ -173,7 +174,8 @@ namespace GTAIVSetupUtilityWPF
                     installdxvk = 3;
                 }
             }
-            if (gplSupport != 2 || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true; ; Logger.Debug($" User's GPU doesn't support GPL in full, allow enabling async."); }
+            if (gplSupport != 2 || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true; ; Logger.Debug($" User's GPU doesn't support GPL in full, enable async toggle."); }
+            else if (allowasync) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; Logger.Debug($" One of user's GPU doesn't support GPL in full, allow enabling async for an edge case scenario."); }
         }
 
 
