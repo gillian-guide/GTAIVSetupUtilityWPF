@@ -165,7 +165,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                         int vulkanVerMajor = vulkanVer.Item1;
                         int vulkanVerMinor = vulkanVer.Item2;
 
-                        Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
+                        Logger.Info($" {deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
                         try
                         {
                             // a proper code wouldn't rely on a try-catch iteration here but rather just do an if-else check, but i'm stupid and i don't want to refactor any of this, teehee <3
@@ -202,7 +202,15 @@ namespace GTAIVSetupUtilityWPF.Functions
                             }
                         }
 
-                        if (physicalDeviceProperties.GetProperty("deviceType").GetString() == "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU" && dxvkSupport > vkDgpuDxvkSupport)
+                        var deviceType = physicalDeviceProperties.GetProperty("deviceType");
+                        var deviceIsDiscreteGpu = deviceType.ValueKind switch
+                        {
+                            JsonValueKind.String => deviceType.GetString() == "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU",
+                            JsonValueKind.Number => deviceType.GetByte() == 2,
+                            _ => throw new InvalidOperationException($"Unsupported value type {deviceType.ValueKind}"),
+                        };
+
+                        if (deviceIsDiscreteGpu && dxvkSupport > vkDgpuDxvkSupport)
                         {
                             Logger.Info($" GPU{x} is a discrete GPU.");
                             vkDgpuDxvkSupport = dxvkSupport;
