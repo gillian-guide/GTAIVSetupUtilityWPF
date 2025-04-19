@@ -73,7 +73,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                     else if (!File.Exists($"data{i}.json"))
                     {
                         Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
-                        process.StartInfo.Arguments = $"--json={i} --output data{i}.json > data{i}.json";
+                        process.StartInfo.Arguments = $"--json={i} > data{i}.json";
                         process.Start();
                         if (!process.WaitForExit(10))
                         {
