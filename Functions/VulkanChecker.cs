@@ -55,9 +55,9 @@ namespace GTAIVSetupUtilityWPF.Functions
                 try
                 {
                     Logger.Debug($" Running vulkaninfo on GPU{i}... If this infinitely loops, your GPU is weird!");
-                    Process process = new Process();
+                    using var process = new Process();
                     process.StartInfo.FileName = "vulkaninfo";
-                    process.StartInfo.Arguments = $"--json={i} --output data{i}.json";
+                    process.StartInfo.Arguments = $"--json={i}";
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.CreateNoWindow = true;
@@ -65,31 +65,17 @@ namespace GTAIVSetupUtilityWPF.Functions
                     process.Start();
                     string output = process.StandardOutput.ReadToEnd();
 
-                    if (!process.WaitForExit(10))
+                    if (!process.WaitForExit(10) || string.IsNullOrEmpty(output))
                     {
                         atLeastOneGPUFailed = true;
                         listOfFailedGPUs.Add(i);
                     }
-                    else if (!File.Exists($"data{i}.json"))
-                    {
-                        Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
-                        process.StartInfo.Arguments = $"--json={i} > data{i}.json";
-                        process.Start();
-                        if (!process.WaitForExit(10))
-                        {
-                            atLeastOneGPUFailed = true;
-                            listOfFailedGPUs.Add(i);
-                        }
-                        else if (!File.Exists($"data{i}.json"))
-                        {
-                            atLeastOneGPUFailed = true;
-                            listOfFailedGPUs.Add(i);
-                        }
-                    }
+
+                    File.WriteAllText($"data{i}.json", output);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($" Ran into error: ", ex);
+                    Logger.Error(" Ran into error: ", ex);
                     atLeastOneGPUFailed = true;
                     listOfFailedGPUs.Add(i);
                 }
