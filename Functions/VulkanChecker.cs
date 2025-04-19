@@ -166,29 +166,20 @@ namespace GTAIVSetupUtilityWPF.Functions
                         int vulkanVerMinor = vulkanVer.Item2;
 
                         Logger.Info($" {deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
-                        try
+                        Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
+                        if (CheckIfExtensionExists(extensions, "VK_EXT_robustness2")
+                            && CheckIfExtensionExists(extensions,"VK_EXT_transform_feedback")
+                            && features.TryGetProperty("VkPhysicalDeviceRobustness2FeaturesEXT", out var robustnessFeatures)
+                            && robustnessFeatures.GetProperty("robustBufferAccess2").GetBoolean()
+                            && robustnessFeatures.GetProperty("nullDescriptor").GetBoolean())
                         {
-                            // a proper code wouldn't rely on a try-catch iteration here but rather just do an if-else check, but i'm stupid and i don't want to refactor any of this, teehee <3
-                            Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
-                            if (CheckIfExtensionExists(extensions, "VK_EXT_robustness2")
-                                && CheckIfExtensionExists(extensions,"VK_EXT_transform_feedback")
-                                && features.TryGetProperty("VkPhysicalDeviceRobustness2FeaturesEXT", out var robustnessFeatures)
-                                && robustnessFeatures.GetProperty("robustBufferAccess2").GetBoolean()
-                                && robustnessFeatures.GetProperty("nullDescriptor").GetBoolean())
-                            {
-                                atLeastOneGPUSucceededJson = true;
-                                Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
-                                dxvkSupport = 2;
-                            }
-                            else
-                            {
-                                Logger.Debug($" GPU{x} doesn't support DXVK 2.x, throwing an exception because doing it any other way is annoying...");
-                                throw new System.Exception();
-                            }
+                            atLeastOneGPUSucceededJson = true;
+                            Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
+                            dxvkSupport = 2;
                         }
-                        catch
+                        else
                         {
-                            Logger.Debug($" Catched an exception, this means GPU{x} doesn't support DXVK 2.x, checking other versions...");
+                            Logger.Debug($" GPU{x} doesn't support DXVK 2.x, checking other versions...");
                             if (vulkanVerMajor == 1 && vulkanVerMinor <= 1)
                             {
                                 atLeastOneGPUSucceededJson = true;
