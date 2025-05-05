@@ -124,7 +124,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                     using (StreamReader file = File.OpenText($"data{x}.json"))
                     {
                         int dxvkSupport = 0;
-                        JsonDocument doc = null;
+                        JsonDocument doc;
                         try
                         {
                             doc = JsonDocument.Parse(file.ReadToEnd());
@@ -134,6 +134,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Error($" Failed to read data{x}.json.");
                             atLeastOneGPUFailed = true;
                             listOfFailedGPUs.Add(x);
+                            continue;
                         }
 
                         JsonElement root = doc.RootElement;
