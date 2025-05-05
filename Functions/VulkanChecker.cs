@@ -56,7 +56,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                     Logger.Debug($" Running vulkaninfo on GPU{i}... If this infinitely loops, your GPU is weird!");
                     using var process = new Process();
                     process.StartInfo.FileName = "vulkaninfo";
-                    process.StartInfo.Arguments = $"--json={i} --output=data{i}.json";
+                    process.StartInfo.Arguments = $"--json={i} --output data{i}.json";
                     process.StartInfo.RedirectStandardOutput = true;
                     process.StartInfo.UseShellExecute = false;
                     process.StartInfo.CreateNoWindow = true;
