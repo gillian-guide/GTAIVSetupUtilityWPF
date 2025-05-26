@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
+using System.Security.Policy;
 using System.Text.Json;
 using System.Windows;
 
@@ -134,6 +135,9 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Error($" Failed to read data{x}.json.");
                             atLeastOneGPUFailed = true;
                             listOfFailedGPUs.Add(x);
+                            Logger.Debug($" Removing data{x}.json...");
+                            file.Close();
+                            File.Delete($"data{x}.json");
                             continue;
                         }
 
@@ -160,14 +164,10 @@ namespace GTAIVSetupUtilityWPF.Functions
                         }
                         else
                         {
-                            Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has an Intel iGPU.");
-                            MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have an Intel iGPU with outdated drivers, but that may not be the case.");
+                            Logger.Error($" Failed to read data{x}.json.");
                             atLeastOneGPUFailed = true;
-                            atLeastOneGPUSucceededJson = true; // not really but just to avoid sabotaging the code ¯\_(ツ)_/¯
-                            igpuOnly = true;
-                            dgpuOnly = false;
-                            intelIgpu = true;
-                            vkIgpuDxvkSupport = 1;
+                            Logger.Debug($" Removing data{x}.json...");
+                            File.Delete($"data{x}.json");
                             continue;
                         }
 
@@ -269,28 +269,39 @@ namespace GTAIVSetupUtilityWPF.Functions
                 else { break; }
             }
 
+            string messagetext = "";
             if (!atLeastOneGPUSucceededJson)
             {
-                MessageBox.Show("The vulkaninfo check failed partially. This usually means one of your GPU's may support Vulkan but have outdated drivers. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
-                Logger.Error($" Running vulkaninfo failed partially. User likely has outdated drivers or an extremely old GPU.");
-                return (0, 0, 0, false, false, false, false);
-            }
-            if (atLeastOneGPUFailed && igpuOnly)
-            {
-                MessageBox.Show("The vulkaninfo check failed for GPU 0 but succeeded for the integrated GPU. This usually means your main GPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is available, but with the assumption that you're going to be playing off the integrated GPU, not the dedicated one.");
-            }
-            else if (atLeastOneGPUFailed && !igpuOnly)
-            {
-                MessageBox.Show("The vulkaninfo check failed for one of the GPU's but succeeded for the rest. This usually means your secondary GPU or the iGPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is available with the assumption that you're going to be playing off the GPU that didn't fail the vulkaninfo check (usually your main GPU).");
-            }
-            if ((atLeastOneGPUFailedGPL || atLeastOneGPUFailedGPL) && gplSupport == 2)
-            {
-                MessageBox.Show("The GPL check failed for one of the GPUs but Fast Linking is supported by at least one of them. This usually means your secondary GPU or the iGPU does not support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe tool will proceed with the assumption that you're going to be playing off the GPU that didn't fail the GPL check (usually your main GPU), but provide options for async just incase.");
+                messagetext = messagetext + "The vulkaninfo check failed partially. This usually means one of your GPU's may support Vulkan but have outdated drivers - the tool will proceed assuming so, but installing DXVK is not recommended.";
+                Logger.Error($" Running vulkaninfo failed partially. User likely has outdated drivers or an old GPU.");
+                igpuOnly = true;
+                dgpuOnly = false;
+                intelIgpu = true;
                 enableasync = true;
+                vkIgpuDxvkSupport = 1;
+            }
+            else
+            {
+                if (atLeastOneGPUFailed && igpuOnly)
+                {
+                    if (messagetext != "") { messagetext = messagetext + "\n\n"; }
+                    messagetext = messagetext + "The vulkaninfo check failed for discrete GPU but succeeded for the integrated GPU. This usually means your discrete GPU does not support Vulkan.\n\nDXVK is available, but with the assumption that you're going to be playing off the integrated GPU, not the dedicated one.";
+                }
+                else if (atLeastOneGPUFailed && !igpuOnly)
+                {
+                    if (messagetext != "") { messagetext = messagetext + "\n\n"; }
+                    messagetext = messagetext + "The vulkaninfo check failed for one of the GPUs but succeeded for the rest. This usually means one of your discrete GPUs does not support Vulkan.\n\nDXVK is available, but with the assumption that you're going to be playing off the supported GPU.";
+                }
+                if ((atLeastOneGPUFailedGPL || atLeastOneGPUFailedFL) && gplSupport == 2)
+                {
+                    if (messagetext != "") { messagetext = messagetext + "\n\n"; }
+                    messagetext = messagetext + "The GPL check failed for one of the GPUs but Fast Linking is supported by at least one of them.This usually means one of your discrete GPUs or the iGPU does not support DXVK in full.\n\nThe tool will proceed with the assumption that you're going to be playing off the GPU that didn't fail the GPL check (usually your main GPU), but provide options for async just incase.";
+                    enableasync = true;
+                }
+                MessageBox.Show(messagetext + "\n\nMake sure your drivers are up-to-date - don't rely on Windows Update drivers, either.");
             }
             return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu, enableasync);
         }
-
         private static bool CheckIfExtensionExists(JsonElement extensionElement, string extensionName)
         {
             switch (extensionElement.ValueKind)
@@ -298,16 +309,15 @@ namespace GTAIVSetupUtilityWPF.Functions
                 case JsonValueKind.Object:
                     return extensionElement.TryGetProperty(extensionName, out _);
                 case JsonValueKind.Array:
-                {
-                    foreach (var extension in extensionElement.EnumerateArray())
                     {
-                        if (extension.GetProperty("extensionName").GetString() == extensionName)
+                        foreach (var extension in extensionElement.EnumerateArray())
                         {
-                            return true;
+                            if (extension.GetProperty("extensionName").GetString() == extensionName)
+                            {
+                                return true;
+                            }
                         }
-                    }
-
-                    return false;
+                        return false;
                 }
                 default:
                     throw new ArgumentOutOfRangeException(nameof(extensionElement), $"Unknown extension element kind {extensionElement.ValueKind}");
