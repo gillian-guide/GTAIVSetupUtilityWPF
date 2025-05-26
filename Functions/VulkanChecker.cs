@@ -37,6 +37,7 @@ namespace GTAIVSetupUtilityWPF.Functions
             bool atLeastOneGPUFailed = false;
             bool atLeastOneGPUFailedGPL = false;
             bool atLeastOneGPUFailedFL = false;
+            bool nvidia50series = false;
             List<int> listOfFailedGPUs = new List<int>();
             try
             {
@@ -220,6 +221,11 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Info($" GPU{x} is a discrete GPU.");
                             vkDgpuDxvkSupport = dxvkSupport;
                             igpuOnly = false;
+                            if (deviceName.Contains("RTX 50"))
+                            {
+                                Logger.Info($" GPU{x} is a 50-series NVIDIA GPU.");
+                                nvidia50series = true;
+                            }
                         }
                         else if (dxvkSupport > vkIgpuDxvkSupport)
                         {
@@ -295,8 +301,13 @@ namespace GTAIVSetupUtilityWPF.Functions
                 if ((atLeastOneGPUFailedGPL || atLeastOneGPUFailedFL) && gplSupport == 2)
                 {
                     if (messagetext != "") { messagetext = messagetext + "\n\n"; }
-                    messagetext = messagetext + "The GPL check failed for one of the GPUs but Fast Linking is supported by at least one of them.This usually means one of your discrete GPUs or the iGPU does not support DXVK in full.\n\nThe tool will proceed with the assumption that you're going to be playing off the GPU that didn't fail the GPL check (usually your main GPU), but provide options for async just incase.";
+                    messagetext = messagetext + "The GPL check failed for one of the GPUs but Fast Linking is supported by at least one of them. This usually means one of your discrete GPUs or the iGPU does not support DXVK in full.\n\nThe tool will proceed with the assumption that you're going to be playing off the GPU that didn't fail the GPL check (usually your main GPU), but provide options for async just incase.";
                     enableasync = true;
+                }
+                if (nvidia50series)
+                {
+                    if (messagetext != "") { messagetext = messagetext + "\n\n"; }
+                    messagetext = messagetext + "Due to your (likely main) discrete GPU being a 50-series NVIDIA GPU, additional library (nvgpucomp32 patch) should be installed to solve game crashes. Refer to the Optimization page on the guide for instructions.";
                 }
                 if (messagetext != "") { MessageBox.Show(messagetext + "\n\nMake sure your drivers are up-to-date - don't rely on Windows Update drivers, either."); }
             }
