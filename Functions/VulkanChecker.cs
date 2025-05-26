@@ -152,12 +152,23 @@ namespace GTAIVSetupUtilityWPF.Functions
                             extensions = deviceCapabilities.GetProperty("extensions");
                             features = deviceCapabilities.GetProperty("features");
                         }
-                        else
+                        else if (root.TryGetProperty("VkPhysicalDeviceProperties", out physicalDeviceProperties)
+                                 && root.TryGetProperty("ArrayOfVkExtensionProperties", out extensions))
                         {
                             properties = root;
-                            physicalDeviceProperties = root.GetProperty("VkPhysicalDeviceProperties");
-                            extensions = root.GetProperty("ArrayOfVkExtensionProperties");
                             features = root;
+                        }
+                        else
+                        {
+                            Logger.Error($" Failed to read data{x}.json. Setting default values assuming the user has an Intel iGPU.");
+                            MessageBox.Show("Failed to read the json. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nThe app will proceed assuming you have an Intel iGPU with outdated drivers, but that may not be the case.");
+                            atLeastOneGPUFailed = true;
+                            atLeastOneGPUSucceededJson = true; // not really but just to avoid sabotaging the code ¯\_(ツ)_/¯
+                            igpuOnly = true;
+                            dgpuOnly = false;
+                            intelIgpu = true;
+                            vkIgpuDxvkSupport = 1;
+                            continue;
                         }
 
                         string deviceName = physicalDeviceProperties.GetProperty("deviceName").GetString();
@@ -171,8 +182,10 @@ namespace GTAIVSetupUtilityWPF.Functions
                         if (CheckIfExtensionExists(extensions, "VK_EXT_robustness2")
                             && CheckIfExtensionExists(extensions,"VK_EXT_transform_feedback")
                             && features.TryGetProperty("VkPhysicalDeviceRobustness2FeaturesEXT", out var robustnessFeatures)
-                            && robustnessFeatures.GetProperty("robustBufferAccess2").GetBoolean()
-                            && robustnessFeatures.GetProperty("nullDescriptor").GetBoolean())
+                            && robustnessFeatures.TryGetProperty("robustBufferAccess2", out var robustBufferAccess)
+                            && robustBufferAccess.GetBoolean()
+                            && robustnessFeatures.TryGetProperty("nullDescriptor", out var nullDescriptor)
+                            && nullDescriptor.GetBoolean())
                         {
                             atLeastOneGPUSucceededJson = true;
                             Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
@@ -222,8 +235,8 @@ namespace GTAIVSetupUtilityWPF.Functions
 
                         try
                         {
-                            if (properties.TryGetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT", out var pipelinePropsExt)
-                                && pipelinePropsExt.GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean())
+                            var pipelinePropsExt = properties.GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT");
+                            if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean())
                             {
                                 Logger.Info($" GPU{x} supports GPL.");
                                 if (gplSupport<1)
