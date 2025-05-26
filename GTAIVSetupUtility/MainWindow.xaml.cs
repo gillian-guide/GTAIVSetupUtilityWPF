@@ -72,31 +72,13 @@ namespace GTAIVSetupUtilityWPF
 
             if (igpuOnly && !dgpuOnly)
             {
-                switch (vkIgpuDxvkSupport)
-                {
-                    case 1:
-                        Logger.Debug(" User's PC only has an iGPU. Setting Install DXVK to 1.");
-                        installdxvk = 1;
-                        break;
-                    case 2:
-                        Logger.Debug(" User's PC only has an iGPU. Setting Install DXVK to 2.");
-                        installdxvk = 2;
-                        break;
-                }
+                Logger.Debug($" User's PC only has an iGPU. Setting Install DXVK to {vkIgpuDxvkSupport}.");
+                installdxvk = vkIgpuDxvkSupport;
             }
             else if (!igpuOnly && dgpuOnly)
             {
-                switch (vkDgpuDxvkSupport)
-                {
-                    case 1:
-                        Logger.Debug(" User's PC only has a dGPU. Setting Install DXVK to 1.");
-                        installdxvk = 1;
-                        break;
-                    case 2:
-                        Logger.Debug(" User's PC only has a dGPU. Setting Install DXVK to 2.");
-                        installdxvk = 2;
-                        break;
-                }
+                Logger.Debug($" User's PC only has a dGPU. Setting Install DXVK to {vkDgpuDxvkSupport}.");
+                installdxvk = vkDgpuDxvkSupport;
             }
             else if (!igpuOnly && !dgpuOnly)
             {
@@ -105,23 +87,15 @@ namespace GTAIVSetupUtilityWPF
                 {
                     case (0, 1):
                     case (0, 2):
+                    case (0, 3):
                         Logger.Debug(" User PC's iGPU supports DXVK, but their dGPU does not - asking them what to do...");
                         var result = MessageBox.Show("Your iGPU supports DXVK but your GPU doesn't - do you still wish to install?", "Install DXVK?", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (result == MessageBoxResult.Yes)
                         {
                             Logger.Debug(" User chose to install DXVK for the iGPU");
                             dxvkonigpu = true;
-                            switch (vkIgpuDxvkSupport)
-                            {
-                                case 1:
-                                    Logger.Debug(" Setting Install DXVK to 1.");
-                                    installdxvk = 1;
-                                    break;
-                                case 2:
-                                    Logger.Debug(" Setting Install DXVK to 2.");
-                                    installdxvk = 2;
-                                    break;
-                            }
+                            Logger.Debug($" Setting Install DXVK to {vkIgpuDxvkSupport}");
+                            installdxvk = vkIgpuDxvkSupport;
                         }
                         else
                         {
@@ -129,36 +103,33 @@ namespace GTAIVSetupUtilityWPF
                         }
                         break;
                     case (1, 2):
+                    case (1, 3):
+                    case (2, 3):
                         Logger.Debug(" User PC's iGPU supports DXVK, but their dGPU supports an inferior version - asking them what to do...");
                         var resultVer = MessageBox.Show("Your iGPU supports a greater version of DXVK than your GPU - which version do you wish to install?\n\nPress 'Yes' to install the version matching your GPU.\n\nPress 'No' to install the version matching your iGPU instead.", "Which DXVK version to install?", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (resultVer == MessageBoxResult.Yes)
                         {
-                            Logger.Debug(" User chose to install DXVK for the dGPU. Setting Install DXVK to 1.");
-                            installdxvk = 1;
+                            Logger.Debug($" User chose to install DXVK for the dGPU. Setting Install DXVK to {vkDgpuDxvkSupport}.");
+                            installdxvk = vkDgpuDxvkSupport;
                         }
                         else
                         {
-                            Logger.Debug(" User chose to install DXVK for the iGPU. Setting Install DXVK to 2.");
+                            Logger.Debug($" User chose to install DXVK for the iGPU. Setting Install DXVK to {vkIgpuDxvkSupport}.");
                             dxvkonigpu = true;
-                            installdxvk = 2;
+                            installdxvk = vkIgpuDxvkSupport;
                         }
                         break;
+                    case (3, 3):
                     case (2, 2):
                     case (1, 1):
                     case (2, 1):
+                    case (3, 1):
+                    case (3, 2):
+                    case (3, 0):
                     case (2, 0):
-                        Logger.Debug(" User's GPU supports the same or a better version of DXVK as the iGPU.");
-                        switch (vkDgpuDxvkSupport)
-                        {
-                            case 1:
-                                Logger.Debug(" Setting Install DXVK to 1.");
-                                installdxvk = 1;
-                                break;
-                            case 2:
-                                Logger.Debug(" Setting Install DXVK to 2.");
-                                installdxvk = 2;
-                                break;
-                        }
+                    case (1, 0):
+                        Logger.Debug($" User's GPU supports the same or a better version of DXVK as the iGPU. Setting Install DXVK to {vkDgpuDxvkSupport}");
+                        installdxvk = vkDgpuDxvkSupport;
                         break;
                 }
             }
@@ -170,11 +141,11 @@ namespace GTAIVSetupUtilityWPF
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    Logger.Debug(" Setting Install DXVK to 3 - a special case to install 1.10.1 for Intel iGPU's.");
-                    installdxvk = 3;
+                    Logger.Debug(" Setting Install DXVK to -1 - a special case to install 1.10.1 for Intel iGPU's.");
+                    installdxvk = -1;
                 }
             }
-            if (gplSupport != 2 || installdxvk != 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true; ; Logger.Debug($" User's GPU doesn't support GPL in full, enable async toggle."); }
+            if (gplSupport != 2 || installdxvk < 2) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; asynccheckbox.IsChecked = true; ; Logger.Debug($" User's GPU doesn't support GPL in full, enable async toggle."); }
             else if (allowasync) { asynccheckbox.Visibility = Visibility.Visible; asynccheckbox.IsEnabled = true; Logger.Debug($" One of user's GPU doesn't support GPL in full, allow enabling async for an edge case scenario."); }
         }
 
@@ -750,7 +721,7 @@ namespace GTAIVSetupUtilityWPF
             Logger.Debug(" dxvk.conf successfully written to game folder.");
             extractfinished = true;
         }
-        private async Task downloaddxvk(string link, List<string> dxvkconf, bool gitlab, bool githubalt, int release = 0)
+        private async Task downloaddxvk(string link, List<string> dxvkconf, bool gitlab, bool alt, int release = 0)
         {
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Other");
@@ -759,7 +730,7 @@ namespace GTAIVSetupUtilityWPF
             var firstResponseBody = await firstResponse.Content.ReadAsStringAsync();
             var parsed = JsonDocument.Parse(firstResponseBody).RootElement;
             string downloadUrl = null;
-            switch (gitlab, githubalt)
+            switch (gitlab, alt)
             {
                 case (false, false):
                     {
@@ -775,6 +746,11 @@ namespace GTAIVSetupUtilityWPF
                     {
                         downloadUrl = parsed.GetProperty("browser_download_url").GetString();
                         break;
+                    }
+                case (true, true):
+                    {
+                        downloadUrl = parsed.GetProperty("assets").GetProperty("links").EnumerateArray().First(link => link.GetProperty("name").GetString().Contains("tar.gz")).GetProperty("url").GetString();
+                        break;                    
                     }
             }
             InstallDXVK(downloadUrl!);
@@ -822,7 +798,6 @@ namespace GTAIVSetupUtilityWPF
             }
 
             Logger.Debug(" Quering links to install DXVK...");
-
             switch (installdxvk)
             {
                 case 1:
@@ -856,6 +831,33 @@ namespace GTAIVSetupUtilityWPF
                 case 2:
                     if (asynccheckbox.IsChecked == true)
                     {
+                        Logger.Info(" Installing DXVK-gplasync 2.6.1...");
+                        dxvkconf.Add("dxvk.enableAsync = true");
+                        downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/v2.6.1-1", dxvkconf, true, true);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
+                        MessageBox.Show($"DXVK-async 2.6.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
+                        Logger.Info(" DXVK-async 2.6.1 has been installed!");
+                    }
+                    else
+                    {
+                        Logger.Info(" Installing DXVK 2.6.1...");
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/244264701", dxvkconf, false, true);
+                        while (!extractfinished)
+                        {
+                            await Task.Delay(500);
+                        }
+                        extractfinished = false;
+                        MessageBox.Show($"DXVK 2.6.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.", "Information");
+                        Logger.Info(" DXVK 2.6.1 has been installed!");
+                    }
+                    break;
+                case 3:
+                    if (asynccheckbox.IsChecked == true)
+                    {
                         Logger.Info(" Installing Latest DXVK-gplasync...");
                         dxvkconf.Add("dxvk.enableAsync = true");
                         dxvkconf.Add("dxvk.gplAsyncCache = true");
@@ -881,7 +883,7 @@ namespace GTAIVSetupUtilityWPF
                         Logger.Info(" Latest DXVK has been installed!");
                     }
                     break;
-                case 3:
+                case -1:
                     if (asynccheckbox.IsChecked == true)
                     {
                         Logger.Info(" Installing DXVK-async 1.10.1...");

@@ -38,6 +38,8 @@ namespace GTAIVSetupUtilityWPF.Functions
             bool atLeastOneGPUFailedGPL = false;
             bool atLeastOneGPUFailedFL = false;
             bool nvidia50series = false;
+            bool maintenance4 = false;
+            bool maintenance5 = false;
             List<int> listOfFailedGPUs = new List<int>();
             try
             {
@@ -190,7 +192,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                         {
                             atLeastOneGPUSucceededJson = true;
                             Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
-                            dxvkSupport = 2;
+                            dxvkSupport = 3;
                         }
                         else
                         {
@@ -206,6 +208,29 @@ namespace GTAIVSetupUtilityWPF.Functions
                                 Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
                                 dxvkSupport = 1;
                             }
+                        }
+
+                        features.TryGetProperty("VkPhysicalDeviceVulkan13Features", out var vk13features);
+                        maintenance4 = vk13features.GetProperty("maintenance4").GetBoolean();
+
+                        if (extensions.TryGetProperty("VK_KHR_maintenance5", out var maintenance5property))
+                        {
+                            if (maintenance5property.GetInt16() == 1)
+                            {
+                                maintenance5 = true;
+                            }
+                        }
+                        else
+                        {
+                            if (features.TryGetProperty("VkPhysicalDeviceMaintenance5FeaturesKHR", out var maintenance5property2))
+                            {
+                                maintenance5 = maintenance5property2.GetProperty("maintenance5").GetBoolean();
+                            }
+                        }
+                        if (dxvkSupport == 3 && (!maintenance4 || !maintenance5))
+                        {
+                            Logger.Info($"GPU{x} highest supported DXVK version is DXVK 2.6.1. Versions 2.7 onwards require maintenance4 and maintenance5 extensions.");
+                            dxvkSupport = 2;
                         }
 
                         var deviceType = physicalDeviceProperties.GetProperty("deviceType");
@@ -245,15 +270,15 @@ namespace GTAIVSetupUtilityWPF.Functions
                             if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean())
                             {
                                 Logger.Info($" GPU{x} supports GPL.");
-                                if (gplSupport<1)
+                                if (gplSupport < 1)
                                     gplSupport = 1;
                                 try
                                 {
                                     if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean())
                                     {
                                         Logger.Debug($" GPU{x} supports GPL in full.");
-                                        if (gplSupport<2)
-                                            gplSupport = 2;
+                                        if (gplSupport < 3)
+                                            gplSupport = 3;
                                     }
                                 }
                                 catch
@@ -268,6 +293,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Debug($" Catched an exception, this means GPU{x} doesn't support GPL.");
                             atLeastOneGPUFailedGPL = true;
                         }
+
                     }
                     Logger.Debug($" Removing data{x}.json...");
                     File.Delete($"data{x}.json");
