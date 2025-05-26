@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Management;
 using System.Text.Json;
 using System.Windows;
@@ -55,7 +54,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                 try
                 {
                     Logger.Debug($" Running vulkaninfo on GPU{i}... If this infinitely loops, your GPU is weird!");
-                    Process process = new Process();
+                    using var process = new Process();
                     process.StartInfo.FileName = "vulkaninfo";
                     process.StartInfo.Arguments = $"--json={i} --output data{i}.json";
                     process.StartInfo.RedirectStandardOutput = true;
@@ -73,23 +72,23 @@ namespace GTAIVSetupUtilityWPF.Functions
                     else if (!File.Exists($"data{i}.json"))
                     {
                         Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
-                        process.StartInfo.Arguments = $"--json={i} --output data{i}.json > data{i}.json";
+                        process.StartInfo.Arguments = $"--json={i}";
                         process.Start();
-                        if (!process.WaitForExit(10))
+                        output = process.StandardOutput.ReadToEnd();
+                        if (!process.WaitForExit(10) || string.IsNullOrEmpty(output))
                         {
                             atLeastOneGPUFailed = true;
                             listOfFailedGPUs.Add(i);
                         }
-                        else if (!File.Exists($"data{i}.json"))
+                        else
                         {
-                            atLeastOneGPUFailed = true;
-                            listOfFailedGPUs.Add(i);
+                            File.WriteAllText($"data{i}.json", output);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($" Ran into error: ", ex);
+                    Logger.Error(" Ran into error: ", ex);
                     atLeastOneGPUFailed = true;
                     listOfFailedGPUs.Add(i);
                 }
@@ -124,9 +123,8 @@ namespace GTAIVSetupUtilityWPF.Functions
                 {
                     using (StreamReader file = File.OpenText($"data{x}.json"))
                     {
-
                         int dxvkSupport = 0;
-                        JsonDocument doc = null;
+                        JsonDocument doc;
                         try
                         {
                             doc = JsonDocument.Parse(file.ReadToEnd());
@@ -136,121 +134,29 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Error($" Failed to read data{x}.json.");
                             atLeastOneGPUFailed = true;
                             listOfFailedGPUs.Add(x);
+                            continue;
                         }
 
                         JsonElement root = doc.RootElement;
-                        if (root.TryGetProperty("capabilities", out JsonElement h))
+                        JsonElement properties;
+                        JsonElement physicalDeviceProperties;
+                        JsonElement extensions;
+                        JsonElement features;
+
+                        if (root.TryGetProperty("capabilities", out var capabilities))
                         {
-                            JsonElement capabilities = h.GetProperty("device");
-                            string deviceName = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceName").GetString();
-                            uint apiVersion = capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("apiVersion").GetUInt32();
-                            (int, int) vulkanVer = ConvertApiVersion(apiVersion);
-                            int vulkanVerMajor = vulkanVer.Item1;
-                            int vulkanVerMinor = vulkanVer.Item2;
+                            var deviceCapabilities = capabilities.GetProperty("device");
+                            properties = deviceCapabilities.GetProperty("properties");
+                            physicalDeviceProperties = properties.GetProperty("VkPhysicalDeviceProperties");
 
-                            Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
-                            try
-                            {
-                                // a proper code wouldn't rely on a try-catch iteration here but rather just do an if-else check, but i'm stupid and i don't want to refactor any of this, teehee <3
-                                Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
-                                if (capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_robustness2", out _)
-                                    && capabilities.GetProperty("extensions").TryGetProperty("VK_EXT_transform_feedback", out _)
-                                    && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("robustBufferAccess2").GetBoolean()
-                                    && capabilities.GetProperty("features").GetProperty("VkPhysicalDeviceRobustness2FeaturesEXT").GetProperty("nullDescriptor").GetBoolean())
-                                {
-                                    atLeastOneGPUSucceededJson = true;
-                                    Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
-                                    dxvkSupport = 2;
-                                }
-                                else
-                                {
-                                    Logger.Debug($" GPU{x} doesn't support DXVK 2.x, throwing an exception because doing it any other way is annoying...");
-                                    throw new System.Exception();
-                                }
-                            }
-                            catch
-                            {
-                                Logger.Debug($" Catched an exception, this means GPU{x} doesn't support DXVK 2.x, checking other versions...");
-                                if (vulkanVerMajor == 1 && vulkanVerMinor <= 1)
-                                {
-                                    atLeastOneGPUSucceededJson = true;
-                                    Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
-                                }
-                                else if (vulkanVerMajor == 1 && vulkanVerMinor < 3)
-                                {
-                                    atLeastOneGPUSucceededJson = true;
-                                    Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
-                                    dxvkSupport = 1;
-                                }
-                            }
-
-                            if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceProperties").GetProperty("deviceType").GetString() == "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU" && dxvkSupport > vkDgpuDxvkSupport)
-                            {
-                                Logger.Info($" GPU{x} is a discrete GPU.");
-                                vkDgpuDxvkSupport = dxvkSupport;
-                                igpuOnly = false;
-                            }
-                            else if (dxvkSupport > vkIgpuDxvkSupport)
-                            {
-                                Logger.Info($" GPU{x} is an integrated GPU.");
-                                vkIgpuDxvkSupport = dxvkSupport;
-                                dgpuOnly = false;
-                                if (deviceName.Contains("Intel"))
-                                {
-                                    Logger.Info($" GPU{x} is an integrated Intel iGPU.");
-                                    intelIgpu = true;
-                                }
-                            }
-
-                            try
-                            {
-                                if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean() == true)
-                                {
-                                    Logger.Info($" GPU{x} supports GPL.");
-                                    if (gplSupport<1)
-                                        gplSupport = 1;
-                                    try
-                                    {
-                                        if (capabilities.GetProperty("properties").GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT").GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean() == true)
-                                        {
-                                            Logger.Debug($" GPU{x} supports GPL in full.");
-                                            if (gplSupport<2)
-                                                gplSupport = 2;
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        Logger.Debug($" Catched an exception, this means GPU{x} doesn't support Fast Linking.");
-                                        atLeastOneGPUFailedFL = true;
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                Logger.Debug($" Catched an exception, this means GPU{x} doesn't support GPL.");
-                                atLeastOneGPUFailedGPL = true;
-                            }
+                            extensions = deviceCapabilities.GetProperty("extensions");
+                            features = deviceCapabilities.GetProperty("features");
                         }
-
-                        else if (root.TryGetProperty("VkPhysicalDeviceProperties", out JsonElement n))
+                        else if (root.TryGetProperty("VkPhysicalDeviceProperties", out physicalDeviceProperties)
+                                 && root.TryGetProperty("ArrayOfVkExtensionProperties", out extensions))
                         {
-                            Logger.Debug($" Couldn't check the json normally, user likely has an Intel iGPU. Performing alternative check...");
-                            JsonElement deviceName = n.GetProperty("deviceName");
-                            JsonElement vulkanVer = root.GetProperty("comments").GetProperty("vulkanApiVersion");
-
-                            Logger.Info($"{deviceName}'s supported Vulkan version is: {vulkanVer}");
-                            if (deviceName.ToString().Contains("HD Graphics"))
-                            {
-                                Logger.Info($" GPU{x} is an integrated Intel iGPU.");
-                                dgpuOnly = false;
-                                intelIgpu = true;
-                            }
-                            if (System.Convert.ToInt16(vulkanVer.ToString().Split('.')[0]) >= 1 && System.Convert.ToInt16(vulkanVer.ToString().Split('.')[1]) >= 1)
-                            {
-                                atLeastOneGPUSucceededJson = true;
-                                Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
-                                vkIgpuDxvkSupport = 1;
-                            }
+                            properties = root;
+                            features = root;
                         }
                         else
                         {
@@ -262,6 +168,99 @@ namespace GTAIVSetupUtilityWPF.Functions
                             dgpuOnly = false;
                             intelIgpu = true;
                             vkIgpuDxvkSupport = 1;
+                            continue;
+                        }
+
+                        string deviceName = physicalDeviceProperties.GetProperty("deviceName").GetString();
+                        uint apiVersion = physicalDeviceProperties.GetProperty("apiVersion").GetUInt32();
+                        (int, int) vulkanVer = ConvertApiVersion(apiVersion);
+                        int vulkanVerMajor = vulkanVer.Item1;
+                        int vulkanVerMinor = vulkanVer.Item2;
+
+                        Logger.Info($" {deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
+                        Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
+                        if (CheckIfExtensionExists(extensions, "VK_EXT_robustness2")
+                            && CheckIfExtensionExists(extensions,"VK_EXT_transform_feedback")
+                            && features.TryGetProperty("VkPhysicalDeviceRobustness2FeaturesEXT", out var robustnessFeatures)
+                            && robustnessFeatures.TryGetProperty("robustBufferAccess2", out var robustBufferAccess)
+                            && robustBufferAccess.GetBoolean()
+                            && robustnessFeatures.TryGetProperty("nullDescriptor", out var nullDescriptor)
+                            && nullDescriptor.GetBoolean())
+                        {
+                            atLeastOneGPUSucceededJson = true;
+                            Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
+                            dxvkSupport = 2;
+                        }
+                        else
+                        {
+                            Logger.Debug($" GPU{x} doesn't support DXVK 2.x, checking other versions...");
+                            if (vulkanVerMajor == 1 && vulkanVerMinor <= 1)
+                            {
+                                atLeastOneGPUSucceededJson = true;
+                                Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
+                            }
+                            else if (vulkanVerMajor == 1 && vulkanVerMinor < 3)
+                            {
+                                atLeastOneGPUSucceededJson = true;
+                                Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
+                                dxvkSupport = 1;
+                            }
+                        }
+
+                        var deviceType = physicalDeviceProperties.GetProperty("deviceType");
+                        var deviceIsDiscreteGpu = deviceType.ValueKind switch
+                        {
+                            JsonValueKind.String => deviceType.GetString() == "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU",
+                            JsonValueKind.Number => deviceType.GetByte() == 2,
+                            _ => throw new InvalidOperationException($"Unsupported value type {deviceType.ValueKind}"),
+                        };
+
+                        if (deviceIsDiscreteGpu && dxvkSupport > vkDgpuDxvkSupport)
+                        {
+                            Logger.Info($" GPU{x} is a discrete GPU.");
+                            vkDgpuDxvkSupport = dxvkSupport;
+                            igpuOnly = false;
+                        }
+                        else if (dxvkSupport > vkIgpuDxvkSupport)
+                        {
+                            Logger.Info($" GPU{x} is an integrated GPU.");
+                            vkIgpuDxvkSupport = dxvkSupport;
+                            dgpuOnly = false;
+                            if (deviceName.Contains("Intel"))
+                            {
+                                Logger.Info($" GPU{x} is an integrated Intel iGPU.");
+                                intelIgpu = true;
+                            }
+                        }
+
+                        try
+                        {
+                            var pipelinePropsExt = properties.GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT");
+                            if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean())
+                            {
+                                Logger.Info($" GPU{x} supports GPL.");
+                                if (gplSupport<1)
+                                    gplSupport = 1;
+                                try
+                                {
+                                    if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean())
+                                    {
+                                        Logger.Debug($" GPU{x} supports GPL in full.");
+                                        if (gplSupport<2)
+                                            gplSupport = 2;
+                                    }
+                                }
+                                catch
+                                {
+                                    Logger.Debug($" Catched an exception, this means GPU{x} doesn't support Fast Linking.");
+                                    atLeastOneGPUFailedFL = true;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            Logger.Debug($" Catched an exception, this means GPU{x} doesn't support GPL.");
+                            atLeastOneGPUFailedGPL = true;
                         }
                     }
                     Logger.Debug($" Removing data{x}.json...");
@@ -290,6 +289,29 @@ namespace GTAIVSetupUtilityWPF.Functions
                 enableasync = true;
             }
             return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu, enableasync);
+        }
+
+        private static bool CheckIfExtensionExists(JsonElement extensionElement, string extensionName)
+        {
+            switch (extensionElement.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    return extensionElement.TryGetProperty(extensionName, out _);
+                case JsonValueKind.Array:
+                {
+                    foreach (var extension in extensionElement.EnumerateArray())
+                    {
+                        if (extension.GetProperty("extensionName").GetString() == extensionName)
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(extensionElement), $"Unknown extension element kind {extensionElement.ValueKind}");
+            }
         }
     }
 }
