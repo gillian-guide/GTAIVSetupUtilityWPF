@@ -210,28 +210,45 @@ namespace GTAIVSetupUtilityWPF.Functions
                             }
                         }
 
-                        features.TryGetProperty("VkPhysicalDeviceVulkan13Features", out var vk13features);
-                        maintenance4 = vk13features.GetProperty("maintenance4").GetBoolean();
+                        try
+                        {
+                            if (features.TryGetProperty("VkPhysicalDeviceVulkan13Features", out var vk13features) &&
+                                vk13features.TryGetProperty("maintenance4", out var maintenance4Prop))
+                            {
+                                maintenance4 = maintenance4Prop.GetBoolean();
+                            }
+                            else
+                            {
+                                maintenance4 = false;
+                            }
 
-                        if (extensions.TryGetProperty("VK_KHR_maintenance5", out var maintenance5property))
-                        {
-                            if (maintenance5property.GetInt16() == 1)
+                            if (extensions.TryGetProperty("VK_KHR_maintenance5", out var maintenance5Property))
                             {
-                                maintenance5 = true;
+                                maintenance5 = maintenance5Property.GetInt16() == 1;
+                            }
+                            else if (features.TryGetProperty("VkPhysicalDeviceMaintenance5FeaturesKHR", out var maintenance5Property2) &&
+                                     maintenance5Property2.TryGetProperty("maintenance5", out var maintenance5Prop))
+                            {
+                                maintenance5 = maintenance5Prop.GetBoolean();
+                            }
+                            else
+                            {
+                                maintenance5 = false;
                             }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            if (features.TryGetProperty("VkPhysicalDeviceMaintenance5FeaturesKHR", out var maintenance5property2))
-                            {
-                                maintenance5 = maintenance5property2.GetProperty("maintenance5").GetBoolean();
-                            }
+                            Logger.Debug($"Caught an exception while checking maintenance features for GPU{x}: {ex.Message}");
+                            maintenance4 = false;
+                            maintenance5 = false;
                         }
+
                         if (dxvkSupport == 3 && (!maintenance4 || !maintenance5))
                         {
-                            Logger.Info($"GPU{x} highest supported DXVK version is DXVK 2.6.1. Versions 2.7 onwards require maintenance4 and maintenance5 extensions.");
+                            Logger.Info($"GPU{x} highest supported DXVK version is DXVK 2.6.2. Versions 2.7 onwards require maintenance4 and maintenance5 extensions.");
                             dxvkSupport = 2;
                         }
+
 
                         var deviceType = physicalDeviceProperties.GetProperty("deviceType");
                         var deviceIsDiscreteGpu = deviceType.ValueKind switch
@@ -266,34 +283,43 @@ namespace GTAIVSetupUtilityWPF.Functions
 
                         try
                         {
-                            var pipelinePropsExt = properties.GetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT");
-                            if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration").GetBoolean())
+                            if (properties.TryGetProperty("VkPhysicalDeviceGraphicsPipelineLibraryPropertiesEXT", out var pipelinePropsExt))
                             {
-                                Logger.Info($" GPU{x} supports GPL.");
-                                if (gplSupport < 1)
-                                    gplSupport = 1;
-                                try
+                                if (pipelinePropsExt.TryGetProperty("graphicsPipelineLibraryIndependentInterpolationDecoration", out var gplVar) && gplVar.GetBoolean())
                                 {
-                                    if (pipelinePropsExt.GetProperty("graphicsPipelineLibraryFastLinking").GetBoolean())
+                                    Logger.Info($" GPU{x} supports GPL.");
+
+                                    if (pipelinePropsExt.TryGetProperty("graphicsPipelineLibraryFastLinking", out var flVar) && flVar.GetBoolean())
                                     {
-                                        Logger.Debug($" GPU{x} supports GPL in full.");
-                                        if (gplSupport < 3)
-                                            gplSupport = 3;
+                                        Logger.Info($" GPU{x} supports Fast Linking.");
+                                        if (gplSupport < 2)
+                                            gplSupport = 2;
+                                    }
+                                    else
+                                    {
+                                        Logger.Debug($" GPU{x} doesn't support Fast Linking.");
+                                        atLeastOneGPUFailedFL = true;
+                                        if (gplSupport < 1)
+                                            gplSupport = 1;
                                     }
                                 }
-                                catch
+                                else
                                 {
-                                    Logger.Debug($" Catched an exception, this means GPU{x} doesn't support Fast Linking.");
-                                    atLeastOneGPUFailedFL = true;
+                                    Logger.Info($" GPU{x} doesn't support GPL.");
+                                    atLeastOneGPUFailedGPL = true;
                                 }
+                            }
+                            else
+                            {
+                                Logger.Info($" GPU{x} doesn't support GPL.");
+                                atLeastOneGPUFailedGPL = true;
                             }
                         }
                         catch
                         {
-                            Logger.Debug($" Catched an exception, this means GPU{x} doesn't support GPL.");
+                            Logger.Debug($" Caught an exception, this likely means GPU{x} doesn't support GPL.");
                             atLeastOneGPUFailedGPL = true;
                         }
-
                     }
                     Logger.Debug($" Removing data{x}.json...");
                     File.Delete($"data{x}.json");
