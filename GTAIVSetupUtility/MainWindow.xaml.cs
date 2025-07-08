@@ -831,28 +831,28 @@ namespace GTAIVSetupUtilityWPF
                 case 2:
                     if (asynccheckbox.IsChecked == true)
                     {
-                        Logger.Info(" Installing DXVK-gplasync 2.6.1...");
+                        Logger.Info(" Installing DXVK-gplasync 2.6.2...");
                         dxvkconf.Add("dxvk.enableAsync = true");
-                        downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/v2.6.1-1", dxvkconf, true, true);
+                        downloaddxvk("https://gitlab.com/api/v4/projects/43488626/releases/v2.6.2-1", dxvkconf, true, true);
                         while (!extractfinished)
                         {
                             await Task.Delay(500);
                         }
                         extractfinished = false;
-                        MessageBox.Show($"DXVK-async 2.6.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
-                        Logger.Info(" DXVK-async 2.6.1 has been installed!");
+                        MessageBox.Show($"DXVK-gplasync 2.6.2 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.");
+                        Logger.Info(" DXVK-async 2.6.2 has been installed!");
                     }
                     else
                     {
-                        Logger.Info(" Installing DXVK 2.6.1...");
-                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/244264701", dxvkconf, false, true);
+                        Logger.Info(" Installing DXVK 2.6.2...");
+                        downloaddxvk("https://api.github.com/repos/doitsujin/dxvk/releases/assets/222230856", dxvkconf, false, true);
                         while (!extractfinished)
                         {
                             await Task.Delay(500);
                         }
                         extractfinished = false;
-                        MessageBox.Show($"DXVK 2.6.1 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.", "Information");
-                        Logger.Info(" DXVK 2.6.1 has been installed!");
+                        MessageBox.Show($"DXVK 2.6.2 has been installed!\n\nConsider going to Steam - Settings - Downloads and disable `Enable Shader Pre-caching` - this may improve your performance.", "Information");
+                        Logger.Info(" DXVK 2.6.2 has been installed!");
                     }
                     break;
                 case 3:
