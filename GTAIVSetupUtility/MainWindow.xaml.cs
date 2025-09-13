@@ -30,6 +30,7 @@ namespace GTAIVSetupUtilityWPF
         int vram1;
         int vram2;
         bool ffix;
+        bool ffixlatest;
         bool isretail;
         bool isIVSDKInstalled;
         bool dxvkonigpu;
@@ -256,7 +257,7 @@ namespace GTAIVSetupUtilityWPF
             if (tipscheck.IsChecked == true)
             {
                 Logger.Debug(" Displaying a tip...");
-                MessageBox.Show("This option allows to change between a 3GB and a 4GB VRAM lock when setting -availablevidmem up.\n\nThe game is 32-bit, so going beyond 4GB is entirely pointless. However, some people reported less issues with it being locked to 3GB instead.\n\nIt's recommended to keep this at default.");
+                MessageBox.Show("This option allows to change between a 3GB and a 4GB VRAM lock when setting -availablevidmem up.\n\nThe game is 32-bit, so going beyond 4GB is entirely pointless. However, some people reported less issues with it being locked to 3GB instead.\n\nIt's recommended to keep this at default. Option is disabled if latest FusionFix is detected.");
             }
         }
         private void monitordetail_Click(object sender, RoutedEventArgs e)
@@ -352,21 +353,49 @@ namespace GTAIVSetupUtilityWPF
                         installdxvkbtn.IsDefault = true;
 
                         isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault() != null;
-                        bool isDXVKInstalled = File.Exists($"{dialog.FileName}\\d3d9.dll");
+
+                        bool isDXVKInstalled = false;
+                        if (File.Exists($"{dialog.FileName}\\vulkan.dll"))
+                        {
+                            isDXVKInstalled = true;
+                            ffix = true;
+                            ffixlatest = true;
+                            vidmemcheck.IsEnabled = false;
+                            vidmemcheck.IsChecked = false;
+                            gb3check.IsEnabled = false;
+                            gb4check.IsEnabled = false;
+                        }
+                        else if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
+                        {
+                            isDXVKInstalled = true;
+                            MessageBox.Show("If you have FusionFix installed, please note that is outdated. It is highly recommended to install the latest version.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("If you have FusionFix installed, please note that is outdated. It is highly recommended to install the latest version.");
+                        }
+
                         if (resultvk.Item1 == 0 && resultvk.Item2 == 0)
                         { dxvkPanel.IsEnabled = false; Logger.Debug(" DXVK is not supported - disabling the DXVK panel."); }
                         else
                         {
                             if (isDXVKInstalled)
                             {
-                                Logger.Debug(" Detected d3d9.dll - DXVK is likely already installed.");
-                                installdxvkbtn.Content = "Reinstall DXVK";
-                                installdxvkbtn.IsDefault = false;
-                                installdxvkbtn.FontWeight = FontWeights.Normal;
-                                installdxvkbtn.Width = 78;
-                                installdxvkbtn.FontSize = 11;
-                                uninstalldxvkbtn.Visibility = Visibility.Visible;
-                                launchoptionsbtn.IsDefault = true;
+                                Logger.Debug(" Detected that DXVK is likely already installed.");
+                                if (ffixlatest)
+                                {
+                                    installdxvkbtn.Content = "Update DXVK";
+                                }
+                                else
+                                {
+                                    installdxvkbtn.Content = "Reinstall DXVK";
+                                    installdxvkbtn.IsDefault = false;
+                                    launchoptionsbtn.IsDefault = true;
+                                    installdxvkbtn.FontWeight = FontWeights.Normal;
+                                    installdxvkbtn.Width = 78;
+                                    installdxvkbtn.FontSize = 11;
+                                    uninstalldxvkbtn.Visibility = Visibility.Visible;
+                                }
                                 monitordetailcheck.IsChecked = true;
                                 if (File.Exists($"{dialog.FileName}\\commandline.txt"))
                                 {
@@ -498,6 +527,7 @@ namespace GTAIVSetupUtilityWPF
                                 bool optToChangeOptions = false;
                                 List<string> incompatibleOptions = new List<string>()
                                 {
+                                    "BenchmarkFix",
                                     "BikePhoneAnimsFix",
                                     "BorderlessWindowed",
                                     "BuildingAlphaFix",
@@ -520,8 +550,10 @@ namespace GTAIVSetupUtilityWPF
                                     "MouseFix",
                                     "NewMemorySystem",
                                     "NoLiveryLimit",
+                                    "NoLODLightHeightCutoff",
                                     "OutOfCommissionFix",
                                     "PoliceEpisodicWeaponSupport",
+                                    "RemoveUselessChecks",
                                     "RemoveBoundingBoxCulling",
                                     "ReversingLightFix",
                                     "SkipIntro",
@@ -697,10 +729,10 @@ namespace GTAIVSetupUtilityWPF
                     Logger.Debug(entry.Name);
                     if (entry.Name.EndsWith("x32/d3d9.dll"))
                     {
-                        using (FileStream fsOut = File.Create(Path.Combine(installationDir, "d3d9.dll")))
+                        using (FileStream fsOut = File.Create(Path.Combine(installationDir, ffixlatest ? "vulkan.dll" : "d3d9.dll")))
                         {
                             tarStream.CopyEntryContents(fsOut);
-                            Logger.Debug(" d3d9.dll extracted into the game folder.");
+                            Logger.Debug(" Required dll extracted into the game folder.");
                         }
                         break;
                     }
@@ -767,7 +799,9 @@ namespace GTAIVSetupUtilityWPF
             dxvkPanel.IsEnabled = false;
 
             Logger.Info(" Removing old files if present.");
-            string[] filestodelete = ["d3d9.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
+            string[] filestodelete = ["d3d10.dll", "d3d11.dll", "dxgi.dll", "vulkan.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
+            if (!ffixlatest)
+                filestodelete.Append("d3d9.dll");
             deletefiles(gamedirectory.Text, filestodelete);
 
             installdxvkbtn.Content = "Installing...";
@@ -912,13 +946,20 @@ namespace GTAIVSetupUtilityWPF
                     break;
             }
             Logger.Debug(" DXVK installed, editing the launch options toggles and enabling the panels back...");
-            installdxvkbtn.Content = "Reinstall DXVK";
+            if (ffixlatest)
+            {
+                installdxvkbtn.Content = "Update DXVK";
+            }
+            else
+            {
+                installdxvkbtn.Content = "Reinstall DXVK";
+                installdxvkbtn.Width = 78;
+                installdxvkbtn.FontSize = 11;
+                uninstalldxvkbtn.Visibility = Visibility.Visible;
+            }
             installdxvkbtn.IsDefault = false;
-            installdxvkbtn.FontWeight = FontWeights.Normal;
-            installdxvkbtn.Width = 78;
-            installdxvkbtn.FontSize = 11;
-            uninstalldxvkbtn.Visibility = Visibility.Visible;
             launchoptionsbtn.IsDefault = true;
+            installdxvkbtn.FontWeight = FontWeights.Normal;
             monitordetailcheck.IsChecked = true;
             dxvkPanel.IsEnabled = true;
         }
@@ -927,7 +968,7 @@ namespace GTAIVSetupUtilityWPF
         {
             dxvkPanel.IsEnabled = false;
             Logger.Info(" Removing all DXVK files present.");
-            string[] filestodelete = ["d3d9.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
+            string[] filestodelete = ["d3d9.dll", "d3d10.dll", "d3d11.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
             deletefiles(gamedirectory.Text, filestodelete);
             uninstalldxvkbtn.Visibility = Visibility.Collapsed;
             installdxvkbtn.Content = "Install DXVK";
@@ -1003,100 +1044,103 @@ namespace GTAIVSetupUtilityWPF
                     iniParser.SaveFile();
                 }
             }
-            if (vidmemcheck.IsChecked == true)
+            if (!ffixlatest)
             {
-                Logger.Debug(" -availablevidmem checked, quering user's VRAM...");
-                try
+                if (vidmemcheck.IsChecked == true)
                 {
-                    ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-                    var videoControllers = searcher.Get();
-
-                    foreach (ManagementObject obj in videoControllers)
+                    Logger.Debug(" -availablevidmem checked, quering user's VRAM...");
+                    try
                     {
-                        var adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A";
-                        if (adapterRAM != "N/A")
+                        ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
+                        var videoControllers = searcher.Get();
+
+                        foreach (ManagementObject obj in videoControllers)
                         {
-                            var tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1);
-                            if (firstgpu)
+                            var adapterRAM = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A";
+                            if (adapterRAM != "N/A")
                             {
-                                Logger.Debug($"GPU0 has {tempvram}MB of VRAM");
-                                vram1 = tempvram;
-                                firstgpu = false;
-                            }
-                            else if (tempvram > vram1 || tempvram > vram2)
-                            {
-                                Logger.Debug($"Next GPU has {tempvram}MB of VRAM");
-                                vram2 = tempvram;
+                                var tempvram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRAM)).MebiBytes + 1);
+                                if (firstgpu)
+                                {
+                                    Logger.Debug($"GPU0 has {tempvram}MB of VRAM");
+                                    vram1 = tempvram;
+                                    firstgpu = false;
+                                }
+                                else if (tempvram > vram1 || tempvram > vram2)
+                                {
+                                    Logger.Debug($"Next GPU has {tempvram}MB of VRAM");
+                                    vram2 = tempvram;
+                                }
                             }
                         }
-                    }
 
-                    if (resultvk.Item4 || resultvk.Item5)
-                    {
-                        if (gb3check.IsChecked == true)
+                        if (resultvk.Item4 || resultvk.Item5)
                         {
-                            if (vram1 > 3072) vram1 = 3072;
+                            if (gb3check.IsChecked == true)
+                            {
+                                if (vram1 > 3072) vram1 = 3072;
+                            }
+                            else
+                            {
+                                if (vram1 > 4096) vram1 = 4096;
+                            }
+                            launchoptions.Add($"-availablevidmem {vram1}");
+                            Logger.Debug($" Added -availablevidmem {vram1}.");
                         }
                         else
                         {
-                            if (vram1 > 4096) vram1 = 4096;
+                            int vram;
+                            if (!dxvkonigpu)
+                            {
+                                vram = Math.Max(vram1, vram2);
+                            }
+                            else
+                            {
+                                vram = Math.Min(vram1, vram2);
+                            }
+                            if (gb3check.IsChecked == true)
+                            {
+                                if (vram > 3072) vram = 3072;
+                            }
+                            else
+                            {
+                                if (vram > 4096) vram = 4096;
+                            }
+                            launchoptions.Add($"-availablevidmem {vram}");
+                            Logger.Debug($" Added -availablevidmem {vram}.");
                         }
-                        launchoptions.Add($"-availablevidmem {vram1}");
-                        Logger.Debug($" Added -availablevidmem {vram1}.");
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        int vram;
-                        if (!dxvkonigpu)
+                       // i know this is an awful and unoptimized and full of bad practices implementation, plz forgib
+                       Logger.Error(ex, "Had some weird error during quering vram; asking the user for manual input");
+                       bool noerror = false;
+                       int vram = 0;
+                       while (!noerror)
                         {
-                            vram = Math.Max(vram1, vram2);
-                        }
-                        else
-                        {
-                            vram = Math.Min(vram1, vram2);
-                        }
-                        if (gb3check.IsChecked == true)
-                        {
+                            try
+                            {
+                                vram = Convert.ToInt16(PromptDialog.Dialog.Prompt("VRAM could not be queried automatically.\n\nInput your VRAM value (in MB):", "Failsafe VRAM input"));
+                                noerror = true;
+                            }
+                            catch
+                            {
+                                Logger.Error("Didn't receive a number, requesting again");
+                                MessageBox.Show("Not a number, try again...");
+                            }
+
+                       }
+                       if (gb3check.IsChecked == true)
+                       {
                             if (vram > 3072) vram = 3072;
-                        }
-                        else
-                        {
+                       }
+                       else
+                       {
                             if (vram > 4096) vram = 4096;
-                        }
-                        launchoptions.Add($"-availablevidmem {vram}");
-                        Logger.Debug($" Added -availablevidmem {vram}.");
+                       }
+                       launchoptions.Add($"-availablevidmem {vram}");
+                       Logger.Debug($" Added -availablevidmem {vram}.");
                     }
-                }
-                catch (Exception ex)
-                {
-                   // i know this is an awful and unoptimized and full of bad practices implementation, plz forgib
-                   Logger.Error(ex, "Had some weird error during quering vram; asking the user for manual input");
-                   bool noerror = false;
-                   int vram = 0;
-                   while (!noerror)
-                    {
-                        try
-                        {
-                            vram = Convert.ToInt16(PromptDialog.Dialog.Prompt("VRAM could not be queried automatically.\n\nInput your VRAM value (in MB):", "Failsafe VRAM input"));
-                            noerror = true;
-                        }
-                        catch
-                        {
-                            Logger.Error("Didn't receive a number, requesting again");
-                            MessageBox.Show("Not a number, try again...");
-                        }
-
-                   }
-                   if (gb3check.IsChecked == true)
-                   {
-                        if (vram > 3072) vram = 3072;
-                   }
-                   else
-                   {
-                        if (vram > 4096) vram = 4096;
-                   }
-                   launchoptions.Add($"-availablevidmem {vram}");
-                   Logger.Debug($" Added -availablevidmem {vram}.");
                 }
             }
             if (monitordetailcheck.IsChecked == true)
@@ -1109,7 +1153,7 @@ namespace GTAIVSetupUtilityWPF
                 launchoptions.Add($"-refreshrate {refreshRate}");
                 Logger.Debug($" Added -width {width}, -height {height}, -refreshrate {refreshRate}.");
             }
-            if (!File.Exists($"{gamedirectory.Text}\\d3d9.dll"))
+            if (!File.Exists($"{gamedirectory.Text}\\d3d9.dll") && !ffixlatest)
             {
                 launchoptions.Add("-managed");
             }

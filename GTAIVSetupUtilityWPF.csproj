@@ -9,7 +9,7 @@
 	<DebugType>embedded</DebugType>
 	<LangVersion>latest</LangVersion>
 	<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-	<Version>1.9.0.1</Version>
+	<Version>1.9.1</Version>
 	<ApplicationIcon>Assets\ivlogo.ico</ApplicationIcon>
 	<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 	<Title>Gillian's GTA IV Setup Utility</Title>
