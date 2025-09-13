@@ -351,6 +351,12 @@ namespace GTAIVSetupUtilityWPF
                         launchoptionsPanel.IsEnabled = true;
                         directorybtn.IsDefault = false;
                         installdxvkbtn.IsDefault = true;
+                        launchoptionsbtn.IsDefault = false;
+                        installdxvkbtn.Width = 160;
+                        installdxvkbtn.FontWeight = FontWeights.SemiBold;
+                        installdxvkbtn.FontSize = 12;
+                        installdxvkbtn.Content = "Install DXVK";
+                        uninstalldxvkbtn.Visibility = Visibility.Collapsed;
 
                         isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault() != null;
 
