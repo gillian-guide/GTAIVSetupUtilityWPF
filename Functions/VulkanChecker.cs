@@ -359,7 +359,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                 if (nvidia50series)
                 {
                     if (messagetext != "") { messagetext = messagetext + "\n\n"; }
-                    messagetext = messagetext + "Due to your (likely main) discrete GPU being a 50-series NVIDIA GPU, additional library (nvgpucomp32 patch) should be installed to solve game crashes. Refer to the Optimization page on the guide for instructions.";
+                    messagetext = messagetext + "Due to your (likely main) discrete GPU being a 50-series NVIDIA GPU, make sure your drivers are up-to-date, as DXVK may not work on outdated drivers.";
                 }
                 if (messagetext != "") { MessageBox.Show(messagetext + "\n\nMake sure your drivers are up-to-date - don't rely on Windows Update drivers, either."); }
             }
