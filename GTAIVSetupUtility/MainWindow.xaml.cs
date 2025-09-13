@@ -157,6 +157,24 @@ namespace GTAIVSetupUtilityWPF
                 ?? String.Empty;
         }
 
+        private void resetVars()
+        {
+            installdxvkbtn.IsDefault = true;
+            launchoptionsbtn.IsDefault = false;
+            launchoptionsbtn.FontWeight = FontWeights.Normal;
+            installdxvkbtn.Width = 160;
+            installdxvkbtn.FontWeight = FontWeights.SemiBold;
+            installdxvkbtn.FontSize = 12;
+            installdxvkbtn.Content = "Install DXVK";
+            uninstalldxvkbtn.Visibility = Visibility.Collapsed;
+            ffix = false;
+            ffixlatest = false;
+            isretail = false;
+            isIVSDKInstalled = false;
+            iniModify = null;
+            ziniModify = null;
+        }
+
         private void deletefiles(string directory, string[] filename)
         {
             foreach(string file in filename)
@@ -350,13 +368,7 @@ namespace GTAIVSetupUtilityWPF
                         gamedirectory.Text = dialog.FileName;
                         launchoptionsPanel.IsEnabled = true;
                         directorybtn.IsDefault = false;
-                        installdxvkbtn.IsDefault = true;
-                        launchoptionsbtn.IsDefault = false;
-                        installdxvkbtn.Width = 160;
-                        installdxvkbtn.FontWeight = FontWeights.SemiBold;
-                        installdxvkbtn.FontSize = 12;
-                        installdxvkbtn.Content = "Install DXVK";
-                        uninstalldxvkbtn.Visibility = Visibility.Collapsed;
+                        resetVars();
 
                         isIVSDKInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault() != null;
 
@@ -370,6 +382,7 @@ namespace GTAIVSetupUtilityWPF
                             vidmemcheck.IsChecked = false;
                             gb3check.IsEnabled = false;
                             gb4check.IsEnabled = false;
+                            uninstalldxvkbtn.Visibility = Visibility.Collapsed;
                         }
                         else if (File.Exists($"{dialog.FileName}\\d3d9.dll"))
                         {
@@ -397,6 +410,7 @@ namespace GTAIVSetupUtilityWPF
                                     installdxvkbtn.Content = "Reinstall DXVK";
                                     installdxvkbtn.IsDefault = false;
                                     launchoptionsbtn.IsDefault = true;
+                                    launchoptionsbtn.FontWeight = FontWeights.SemiBold;
                                     installdxvkbtn.FontWeight = FontWeights.Normal;
                                     installdxvkbtn.Width = 78;
                                     installdxvkbtn.FontSize = 11;
