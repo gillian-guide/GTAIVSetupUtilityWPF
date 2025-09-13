@@ -167,6 +167,10 @@ namespace GTAIVSetupUtilityWPF
             installdxvkbtn.FontSize = 12;
             installdxvkbtn.Content = "Install DXVK";
             uninstalldxvkbtn.Visibility = Visibility.Collapsed;
+            vidmemcheck.IsEnabled = true;
+            vidmemcheck.IsChecked = true;
+            gb3check.IsEnabled = true;
+            gb4check.IsEnabled = true;
             ffix = false;
             ffixlatest = false;
             isretail = false;
