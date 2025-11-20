@@ -1,0 +1,43 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Publish
+      run: dotnet publish --configuration Release --output ./publish --no-build
+      
+    - name: Create artifact directory
+      run: |
+        New-Item -ItemType Directory -Force -Path ./artifact
+        Copy-Item -Path ./publish/* -Destination ./artifact/ -Recurse
+      shell: pwsh
+      
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: GTAIVSetupUtilityWPF-${{ github.sha }}
+        path: ./artifact/
+        retention-days: 90
