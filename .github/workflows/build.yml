@@ -27,7 +27,7 @@ jobs:
       run: dotnet build GTAIVSetupUtilityWPF.csproj --configuration Release --no-restore
       
     - name: Publish
-      run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish --no-build --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+      run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish --no-build --self-contained true -p:PublishSingleFile=true
       
     - name: Create artifact directory
       run: |
