@@ -21,13 +21,13 @@ jobs:
         dotnet-version: '6.0.x'
         
     - name: Restore dependencies
-      run: dotnet restore GTAIVSetupUtilityWPF.csproj
+      run: dotnet restore GTAIVSetupUtilityWPF.csproj -r win-x64
       
     - name: Build
-      run: dotnet build GTAIVSetupUtilityWPF.csproj --configuration Release --no-restore
+      run: dotnet build GTAIVSetupUtilityWPF.csproj --configuration Release --no-restore -r win-x64
       
     - name: Publish
-      run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish --no-build --self-contained true -p:PublishSingleFile=true
+      run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish --no-build --self-contained true -p:PublishSingleFile=true -r win-x64
       
     - name: Create artifact directory
       run: |
