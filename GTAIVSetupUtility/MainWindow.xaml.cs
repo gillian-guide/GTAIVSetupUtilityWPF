@@ -39,6 +39,29 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
         private string? _iniPathZp;
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        
+        static bool IsLinux()
+        {
+            // Direct Linux detection
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return true;
+    
+            // Wine detection
+            if (Environment.GetEnvironmentVariable("WINE_PREFIX") != null ||
+                Environment.GetEnvironmentVariable("WINEPREFIX") != null)
+                return true;
+    
+            // Check for Linux-specific filesystem structures
+            if (Directory.Exists("/proc") || Directory.Exists("/sys"))
+                return true;
+    
+            // Check PATH separator (Linux uses ':' while Windows uses ';')
+            var path = Environment.GetEnvironmentVariable("PATH");
+            if (path != null && path.Contains(':') && !path.Contains(';'))
+                return true;
+    
+            return false;
+        }
 
         [STAThread]
         public static void Main()
@@ -57,29 +80,6 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             Logger.Info(" Initializing the main window...");
             InitializeComponent();
             Logger.Info(" Main window initialized!");
-            
-            static bool IsLinux()
-            {
-                // Direct Linux detection
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return true;
-    
-                // Wine detection
-                if (Environment.GetEnvironmentVariable("WINE_PREFIX") != null ||
-                    Environment.GetEnvironmentVariable("WINEPREFIX") != null)
-                    return true;
-    
-                // Check for Linux-specific filesystem structures
-                if (Directory.Exists("/proc") || Directory.Exists("/sys"))
-                    return true;
-    
-                // Check PATH separator (Linux uses ':' while Windows uses ';')
-                var path = Environment.GetEnvironmentVariable("PATH");
-                if (path != null && path.Contains(':') && !path.Contains(';'))
-                    return true;
-    
-                return false;
-            }
             
             if (IsLinux())
             {
@@ -1102,6 +1102,7 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
                     Logger.Debug(" -availablevidmem checked, quering user's VRAM...");
                     try
                     {
+                        if (IsLinux()) throw new Exception();
                         var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
                         var videoControllers = searcher.Get();
 
