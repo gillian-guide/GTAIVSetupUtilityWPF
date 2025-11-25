@@ -23,7 +23,7 @@ namespace GTAIVSetupUtilityWPF.Common
             public string DeviceKey;
         }
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern bool EnumDisplayDevices(string? lpDevice, int iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, int dwFlags);
 
         public static void GetPrimaryDisplayInfo(out int width, out int height, out int refreshRate)
@@ -36,17 +36,15 @@ namespace GTAIVSetupUtilityWPF.Common
             height = 1080;
             refreshRate = 60;
 
-            if (EnumDisplayDevices(null, 0, ref primaryDevice, 0))
-            {
-                DEVMODE devMode = new DEVMODE();
-                devMode.dmSize = (short)Marshal.SizeOf(devMode);
+            if (!EnumDisplayDevices(null, 0, ref primaryDevice, 0)) return;
+            DEVMODE devMode = new DEVMODE();
+            devMode.dmSize = (short)Marshal.SizeOf(devMode);
 
-                if (EnumDisplaySettings(primaryDevice.DeviceName, -1, ref devMode))
-                {
-                    width = devMode.dmPelsWidth;
-                    height = devMode.dmPelsHeight;
-                    refreshRate = devMode.dmDisplayFrequency;
-                }
+            if (EnumDisplaySettings(primaryDevice.DeviceName, -1, ref devMode))
+            {
+                width = devMode.dmPelsWidth;
+                height = devMode.dmPelsHeight;
+                refreshRate = devMode.dmDisplayFrequency;
             }
         }
 

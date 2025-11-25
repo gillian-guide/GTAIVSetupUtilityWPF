@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Management;
 using System.Security.Policy;
 using System.Text.Json;
@@ -16,44 +17,43 @@ namespace GTAIVSetupUtilityWPF.Functions
     {
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-        static (int, int) ConvertApiVersion(uint apiversion)
+
+        private static (int, int) ConvertApiVersion(uint apiVersion)
         {
-            uint major = apiversion >> 22;
-            uint minor = apiversion >> 12 & 0x3ff;
+            var major = apiVersion >> 22;
+            var minor = apiVersion >> 12 & 0x3ff;
             return (Convert.ToInt32(major), Convert.ToInt32(minor));
         }
         public static (int, int, int, bool, bool, bool, bool) VulkanCheck()
         {
-            int gpucount = 0;
+            int gpuCount;
             int gplSupport = 0;
             int vkDgpuDxvkSupport = 0;
             int vkIgpuDxvkSupport = 0;
             bool igpuOnly = true;
             bool dgpuOnly = true;
             bool intelIgpu = false;
-            bool enableasync = false;
-            bool atLeastOneGPUSucceededVulkanInfo = false;
-            bool atLeastOneGPUSucceededJson = false;
-            bool atLeastOneGPUFailed = false;
-            bool atLeastOneGPUFailedGPL = false;
-            bool atLeastOneGPUFailedFL = false;
-            bool nvidia50series = false;
-            bool maintenance4 = false;
-            bool maintenance5 = false;
-            List<int> listOfFailedGPUs = new List<int>();
+            bool enableAsync = false;
+            bool atLeastOneGpuSucceededVulkanInfo = false;
+            bool atLeastOneGpuSucceededJson = false;
+            bool atLeastOneGpuFailed = false;
+            bool atLeastOneGpuFailedGpl = false;
+            bool atLeastOneGpuFailedFl = false;
+            bool nvidia50Series = false;
+            var listOfFailedGpus = new List<int>();
             try
             {
-                ObjectQuery query = new ObjectQuery("SELECT * FROM Win32_VideoController");
-                ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
-                ManagementObjectCollection videoControllers = searcher.Get();
-                gpucount = videoControllers.Count;
+                var query = new ObjectQuery("SELECT * FROM Win32_VideoController");
+                var searcher = new ManagementObjectSearcher(query);
+                var videoControllers = searcher.Get();
+                gpuCount = videoControllers.Count;
             }
             catch (Exception ex)
             {
                 Logger.Error($" Ran into error: ", ex);
                 throw;
             }
-            for (int i = 0; i < gpucount; i++)
+            for (int i = 0; i < gpuCount; i++)
             {
                 try
                 {
@@ -66,23 +66,22 @@ namespace GTAIVSetupUtilityWPF.Functions
                     process.StartInfo.CreateNoWindow = true;
 
                     process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
 
-                    if (!process.WaitForExit(10))
+                    if (!process.WaitForExit(TimeSpan.FromSeconds(10)))
                     {
-                        atLeastOneGPUFailed = true;
-                        listOfFailedGPUs.Add(i);
+                        atLeastOneGpuFailed = true;
+                        listOfFailedGpus.Add(i);
                     }
                     else if (!File.Exists($"data{i}.json"))
                     {
                         Logger.Debug($" Failed to run vulkaninfo via the first method, trying again...");
                         process.StartInfo.Arguments = $"--json={i}";
                         process.Start();
-                        output = process.StandardOutput.ReadToEnd();
+                        var output = process.StandardOutput.ReadToEnd();
                         if (!process.WaitForExit(10) || string.IsNullOrEmpty(output))
                         {
-                            atLeastOneGPUFailed = true;
-                            listOfFailedGPUs.Add(i);
+                            atLeastOneGpuFailed = true;
+                            listOfFailedGpus.Add(i);
                         }
                         else
                         {
@@ -92,31 +91,31 @@ namespace GTAIVSetupUtilityWPF.Functions
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(" Ran into error: ", ex);
-                    atLeastOneGPUFailed = true;
-                    listOfFailedGPUs.Add(i);
+                    Logger.Error(" Ran into error: {Argument1}", ex);
+                    atLeastOneGpuFailed = true;
+                    listOfFailedGpus.Add(i);
                 }
 
-                if (!listOfFailedGPUs.Contains(i))
+                if (!listOfFailedGpus.Contains(i))
                 {
-                    atLeastOneGPUSucceededVulkanInfo = true;
+                    atLeastOneGpuSucceededVulkanInfo = true;
                 }
                 else
                 {
                     Logger.Error($" Running vulkaninfo on GPU{i} failed! User likely has outdated drivers or an extremely old GPU.");
                 }
             }
-            if (!atLeastOneGPUSucceededVulkanInfo)
+            if (!atLeastOneGpuSucceededVulkanInfo)
             {
                 MessageBox.Show("The vulkaninfo check failed entirely. This usually means none of your GPU's support Vulkan. Make sure your drivers are up-to-date - don't rely on Windows Update drivers, either.\n\nDXVK is not available.");
-                Logger.Error($" Running vulkaninfo failed entirely! User likely has outdated drivers or an extremely old GPU.");
+                Logger.Error(" Running vulkaninfo failed entirely! User likely has outdated drivers or an extremely old GPU.");
                 return (0, 0, 0, false, false, false, false);
             }
 
-            Logger.Debug($" Analyzing the vulkaninfo for every .json generated...");
-            for (int x = 0; x < gpucount; x++)
+            Logger.Debug(" Analyzing the vulkaninfo for every .json generated...");
+            for (int x = 0; x < gpuCount; x++)
             {
-                if (listOfFailedGPUs.Contains(x))
+                if (listOfFailedGpus.Contains(x))
                 {
                     Logger.Debug($" GPU{x} is in the failed list, skipping this iteration of the loop...");
                     continue;
@@ -125,7 +124,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                 Logger.Debug($" Checking data{x}.json...");
                 if (File.Exists($"data{x}.json"))
                 {
-                    using (StreamReader file = File.OpenText($"data{x}.json"))
+                    using (var file = File.OpenText($"data{x}.json"))
                     {
                         int dxvkSupport = 0;
                         JsonDocument doc;
@@ -136,15 +135,15 @@ namespace GTAIVSetupUtilityWPF.Functions
                         catch (JsonException)
                         {
                             Logger.Error($" Failed to read data{x}.json.");
-                            atLeastOneGPUFailed = true;
-                            listOfFailedGPUs.Add(x);
+                            atLeastOneGpuFailed = true;
+                            listOfFailedGpus.Add(x);
                             Logger.Debug($" Removing data{x}.json...");
                             file.Close();
                             File.Delete($"data{x}.json");
                             continue;
                         }
 
-                        JsonElement root = doc.RootElement;
+                        var root = doc.RootElement;
                         JsonElement properties;
                         JsonElement physicalDeviceProperties;
                         JsonElement extensions;
@@ -168,17 +167,15 @@ namespace GTAIVSetupUtilityWPF.Functions
                         else
                         {
                             Logger.Error($" Failed to read data{x}.json.");
-                            atLeastOneGPUFailed = true;
+                            atLeastOneGpuFailed = true;
                             Logger.Debug($" Removing data{x}.json...");
                             File.Delete($"data{x}.json");
                             continue;
                         }
 
-                        string deviceName = physicalDeviceProperties.GetProperty("deviceName").GetString();
-                        uint apiVersion = physicalDeviceProperties.GetProperty("apiVersion").GetUInt32();
-                        (int, int) vulkanVer = ConvertApiVersion(apiVersion);
-                        int vulkanVerMajor = vulkanVer.Item1;
-                        int vulkanVerMinor = vulkanVer.Item2;
+                        var deviceName = physicalDeviceProperties.GetProperty("deviceName").GetString();
+                        var apiVersion = physicalDeviceProperties.GetProperty("apiVersion").GetUInt32();
+                        var (vulkanVerMajor, vulkanVerMinor) = ConvertApiVersion(apiVersion);
 
                         Logger.Info($" {deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
                         Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
@@ -190,30 +187,33 @@ namespace GTAIVSetupUtilityWPF.Functions
                             && robustnessFeatures.TryGetProperty("nullDescriptor", out var nullDescriptor)
                             && nullDescriptor.GetBoolean())
                         {
-                            atLeastOneGPUSucceededJson = true;
+                            atLeastOneGpuSucceededJson = true;
                             Logger.Info($" GPU{x} supports DXVK 2.x, yay!");
                             dxvkSupport = 3;
                         }
                         else
                         {
                             Logger.Debug($" GPU{x} doesn't support DXVK 2.x, checking other versions...");
-                            if (vulkanVerMajor == 1 && vulkanVerMinor <= 1)
+                            switch (vulkanVerMajor)
                             {
-                                atLeastOneGPUSucceededJson = true;
-                                Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
-                            }
-                            else if (vulkanVerMajor == 1 && vulkanVerMinor < 3)
-                            {
-                                atLeastOneGPUSucceededJson = true;
-                                Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
-                                dxvkSupport = 1;
+                                case 1 when vulkanVerMinor <= 1:
+                                    atLeastOneGpuSucceededJson = true;
+                                    Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
+                                    break;
+                                case 1 when vulkanVerMinor < 3:
+                                    atLeastOneGpuSucceededJson = true;
+                                    Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
+                                    dxvkSupport = 1;
+                                    break;
                             }
                         }
 
+                        bool maintenance4;
+                        bool maintenance5;
                         try
                         {
-                            if (features.TryGetProperty("VkPhysicalDeviceVulkan13Features", out var vk13features) &&
-                                vk13features.TryGetProperty("maintenance4", out var maintenance4Prop))
+                            if (features.TryGetProperty("VkPhysicalDeviceVulkan13Features", out var vk13Features) &&
+                                vk13Features.TryGetProperty("maintenance4", out var maintenance4Prop))
                             {
                                 maintenance4 = maintenance4Prop.GetBoolean();
                             }
@@ -263,10 +263,10 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Info($" GPU{x} is a discrete GPU.");
                             vkDgpuDxvkSupport = dxvkSupport;
                             igpuOnly = false;
-                            if (deviceName.Contains("RTX 50"))
+                            if (deviceName!.Contains("RTX 50"))
                             {
                                 Logger.Info($" GPU{x} is a 50-series NVIDIA GPU.");
-                                nvidia50series = true;
+                                nvidia50Series = true;
                             }
                         }
                         else if (dxvkSupport > vkIgpuDxvkSupport)
@@ -274,7 +274,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                             Logger.Info($" GPU{x} is an integrated GPU.");
                             vkIgpuDxvkSupport = dxvkSupport;
                             dgpuOnly = false;
-                            if (deviceName.Contains("Intel"))
+                            if (deviceName!.Contains("Intel"))
                             {
                                 Logger.Info($" GPU{x} is an integrated Intel iGPU.");
                                 intelIgpu = true;
@@ -298,7 +298,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                                     else
                                     {
                                         Logger.Debug($" GPU{x} doesn't support Fast Linking.");
-                                        atLeastOneGPUFailedFL = true;
+                                        atLeastOneGpuFailedFl = true;
                                         if (gplSupport < 1)
                                             gplSupport = 1;
                                     }
@@ -306,19 +306,19 @@ namespace GTAIVSetupUtilityWPF.Functions
                                 else
                                 {
                                     Logger.Info($" GPU{x} doesn't support GPL.");
-                                    atLeastOneGPUFailedGPL = true;
+                                    atLeastOneGpuFailedGpl = true;
                                 }
                             }
                             else
                             {
                                 Logger.Info($" GPU{x} doesn't support GPL.");
-                                atLeastOneGPUFailedGPL = true;
+                                atLeastOneGpuFailedGpl = true;
                             }
                         }
                         catch
                         {
                             Logger.Debug($" Caught an exception, this likely means GPU{x} doesn't support GPL.");
-                            atLeastOneGPUFailedGPL = true;
+                            atLeastOneGpuFailedGpl = true;
                         }
                     }
                     Logger.Debug($" Removing data{x}.json...");
@@ -327,43 +327,43 @@ namespace GTAIVSetupUtilityWPF.Functions
                 else { break; }
             }
 
-            string messagetext = "";
-            if (!atLeastOneGPUSucceededJson)
+            var messagetext = "";
+            if (!atLeastOneGpuSucceededJson)
             {
                 messagetext = messagetext + "The vulkaninfo check failed partially. This usually means one of your GPU's may support Vulkan but have outdated drivers - the tool will proceed assuming so, but installing DXVK is not recommended.";
                 Logger.Error($" Running vulkaninfo failed partially. User likely has outdated drivers or an old GPU.");
                 igpuOnly = true;
                 dgpuOnly = false;
                 intelIgpu = true;
-                enableasync = true;
+                enableAsync = true;
                 vkIgpuDxvkSupport = 1;
             }
             else
             {
-                if (atLeastOneGPUFailed && igpuOnly)
+                if (atLeastOneGpuFailed && igpuOnly)
                 {
                     if (messagetext != "") { messagetext = messagetext + "\n\n"; }
                     messagetext = messagetext + "The vulkaninfo check failed for discrete GPU but succeeded for the integrated GPU. This usually means your discrete GPU does not support Vulkan.\n\nDXVK is available, but with the assumption that you're going to be playing off the integrated GPU, not the dedicated one.";
                 }
-                else if (atLeastOneGPUFailed && !igpuOnly)
+                else if (atLeastOneGpuFailed && !igpuOnly)
                 {
                     if (messagetext != "") { messagetext = messagetext + "\n\n"; }
                     messagetext = messagetext + "The vulkaninfo check failed for one of the GPUs but succeeded for the rest. This usually means one of your discrete GPUs does not support Vulkan.\n\nDXVK is available, but with the assumption that you're going to be playing off the supported GPU.";
                 }
-                if ((atLeastOneGPUFailedGPL || atLeastOneGPUFailedFL) && gplSupport == 2)
+                if ((atLeastOneGpuFailedGpl || atLeastOneGpuFailedFl) && gplSupport == 2)
                 {
                     if (messagetext != "") { messagetext = messagetext + "\n\n"; }
                     messagetext = messagetext + "The GPL check failed for one of the GPUs but Fast Linking is supported by at least one of them. This usually means one of your discrete GPUs or the iGPU does not support DXVK in full.\n\nThe tool will proceed with the assumption that you're going to be playing off the GPU that didn't fail the GPL check (usually your main GPU), but provide options for async just incase.";
-                    enableasync = true;
+                    enableAsync = true;
                 }
-                if (nvidia50series)
+                if (nvidia50Series)
                 {
                     if (messagetext != "") { messagetext = messagetext + "\n\n"; }
                     messagetext = messagetext + "Due to your (likely main) discrete GPU being a 50-series NVIDIA GPU, make sure your drivers are up-to-date, as DXVK may not work on outdated drivers.";
                 }
                 if (messagetext != "") { MessageBox.Show(messagetext + "\n\nMake sure your drivers are up-to-date - don't rely on Windows Update drivers, either."); }
             }
-            return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu, enableasync);
+            return (vkDgpuDxvkSupport, vkIgpuDxvkSupport, gplSupport, igpuOnly, dgpuOnly, intelIgpu, enableAsync);
         }
         private static bool CheckIfExtensionExists(JsonElement extensionElement, string extensionName)
         {
@@ -372,16 +372,15 @@ namespace GTAIVSetupUtilityWPF.Functions
                 case JsonValueKind.Object:
                     return extensionElement.TryGetProperty(extensionName, out _);
                 case JsonValueKind.Array:
-                    {
-                        foreach (var extension in extensionElement.EnumerateArray())
-                        {
-                            if (extension.GetProperty("extensionName").GetString() == extensionName)
-                            {
-                                return true;
-                            }
-                        }
-                        return false;
+                {
+                    return extensionElement.EnumerateArray().Any(extension => extension.GetProperty("extensionName").GetString() == extensionName);
                 }
+                case JsonValueKind.Undefined:
+                case JsonValueKind.String:
+                case JsonValueKind.Number:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                case JsonValueKind.Null:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(extensionElement), $"Unknown extension element kind {extensionElement.ValueKind}");
             }

@@ -11,7 +11,7 @@ namespace GTAIVSetupUtilityWPF.Common
         private readonly Dictionary<string, Dictionary<string, string>> iniData = new Dictionary<string, Dictionary<string, string>>();
         private string FilePath { get; }
 
-        public IniEditor(string filePath)
+        public IniEditor(string? filePath)
         {
             FilePath = filePath;
             OpenFile();
