@@ -27,7 +27,7 @@ jobs:
       run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish/FrameworkDependent --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=None -p:DebugSymbols=false
       
     - name: Publish Self-Contained
-      run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish/SelfContained --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:InvariantGlobalization=true -p:DebugType=None -p:DebugSymbols=false -r win-x64
+      run: dotnet publish GTAIVSetupUtilityWPF.csproj --configuration Release --output ./publish/SelfContained --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:InvariantGlobalization=true -p:DebugType=None -p:DebugSymbols=false -r win-x64
       
     - name: Upload Framework-Dependent Artifact
       uses: actions/upload-artifact@v4
