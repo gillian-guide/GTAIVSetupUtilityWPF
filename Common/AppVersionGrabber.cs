@@ -1,30 +1,37 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
+using NLog;
 
 namespace GTAIVSetupUtilityWPF.Common
 {
     public static class AppVersionGrabber
     {
+        private static readonly ILogger Logger = LogManager.GetCurrentClassLogger();
+    
         public static string GetFileVersion(string filePath)
+        {
+            const string DEFAULT_VERSION = "0.0.0.0";
+        
+            return (File.Exists(filePath), GetVersionInfo(filePath)) switch
+            {
+                (false, _) => DEFAULT_VERSION,
+                (true, { } version) when !string.IsNullOrEmpty(version) => version,
+                _ => DEFAULT_VERSION
+            };
+        }
+    
+        private static string? GetVersionInfo(string filePath)
         {
             try
             {
-                if (System.IO.File.Exists(filePath))
-                {
-                    FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(filePath);
-                    string version = fileVersionInfo.FileVersion;
-                    return !string.IsNullOrEmpty(version) ? version : "0.0.0.0";
-                }
-                else
-                {
-                    return "0.0.0.0";
-                }
+                var versionInfo = FileVersionInfo.GetVersionInfo(filePath);
+                return versionInfo.FileVersion;
             }
             catch (Exception ex)
             {
-                // Handle any exceptions here if needed
-                Debug.WriteLine("Error: " + ex.Message);
-                return "0.0.0.0";
+                Logger.Error(ex, "Error retrieving file version for {FilePath}", filePath);
+                return null;
             }
         }
     }

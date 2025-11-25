@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -8,7 +9,6 @@ using System.Management;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -193,15 +193,9 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             VidMemCheckbox.IsChecked = true;
             Gb3Checkbox.IsEnabled = true;
             Gb4Checkbox.IsEnabled = true;
-            _ffix = false;
-            _ffixLatest = false;
-            _isRetail = false;
-            _isIvsdkInstalled = false;
-            _iniPath = null;
-            _iniPathZp = null;
         }
 
-        private void DeleteFiles(string directory, string[] filename)
+        private void DeleteFiles(string directory, List<string> filename)
         {
             foreach(var file in filename)
             {
@@ -385,24 +379,25 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
 
                         _isIvsdkInstalled = Directory.GetFiles(dialog.FileName, "IVSDKDotNet.asi", SearchOption.AllDirectories).FirstOrDefault() != null;
 
-                        if (File.Exists($@"{dialog.FileName}\vulkan.dll"))
+                        if (File.Exists($@"{dialog.FileName}\vulkan.dll") ||
+                            File.Exists($@"{dialog.FileName}\d3d9.dll"))
                         {
                             isDxvkInstalled = true;
-                            _ffix = true;
-                            _ffixLatest = true;
                             VidMemCheckbox.IsEnabled = false;
                             VidMemCheckbox.IsChecked = false;
                             Gb3Checkbox.IsEnabled = false;
                             Gb4Checkbox.IsEnabled = false;
                             UninstallDxvkBtn.Visibility = Visibility.Collapsed;
                         }
-                        else if (File.Exists($@"{dialog.FileName}\d3d9.dll"))
+                        
+                        if (File.Exists($@"{dialog.FileName}\vulkan.dll"))
                         {
-                            isDxvkInstalled = true;
-                            MessageBox.Show("If you have FusionFix installed, please note that is outdated. It is highly recommended to install the latest version.");
+                            _ffix = true;
+                            _ffixLatest = true;
                         }
                         else
                         {
+                            _ffixLatest = false;
                             MessageBox.Show("If you have FusionFix installed, please note that is outdated. It is highly recommended to install the latest version.");
                         }
 
@@ -710,15 +705,14 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             try
             {
                 Logger.Debug(" Downloading the .tar.gz...");
-                var thread = new Thread(() =>
+                await Task.Run(async () =>
                 {
                     Logger.Debug(" Downloading the selected release...");
                     var client = new WebClient();
-                    client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(client_DownloadProgressChanged);
-                    client.DownloadFileCompleted += new AsyncCompletedEventHandler(client_DownloadFileCompleted);
+                    client.DownloadProgressChanged += client_DownloadProgressChanged;
+                    client.DownloadFileCompleted += client_DownloadFileCompleted;
                     client.DownloadFileAsync(new Uri(downloadUrl), "./dxvk.tar.gz");
                 });
-                thread.Start();
             }
             catch (Exception ex)
             {
@@ -811,9 +805,8 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             DxvkPanel.IsEnabled = false;
 
             Logger.Info(" Removing old files if present.");
-            string[] tobedeleted = ["d3d10.dll", "d3d11.dll", "dxgi.dll", "vulkan.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
-            if (!_ffixLatest)
-                tobedeleted.Append("d3d9.dll");
+            List<string> tobedeleted = ["d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log"];
+            if (!_ffixLatest) tobedeleted.Add("d3d9.dll");
             DeleteFiles(GameDirectory.Text, tobedeleted);
 
             InstallDxvkBtn.Content = "Installing...";
@@ -980,9 +973,12 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
         {
             DxvkPanel.IsEnabled = false;
             Logger.Info(" Removing all DXVK files present.");
-            string[] tobedeleted = ["d3d10.dll", "d3d11.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log", "d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll"];
-            if (!_ffixLatest)
-                tobedeleted.Append("d3d9.dll");
+            List<string> tobedeleted = ["d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll", "dxgi.dll", "dxvk.conf", "GTAIV.dxvk-cache", "PlayGTAIV.dxvk-cache", "LaunchGTAIV.dxvk-cache", "GTAIV_d3d9.log", "PlayGTAIV_d3d9.log", "LaunchGTAIV_d3d9.log"];
+            if (!_ffixLatest) tobedeleted.Add("d3d9.dll");
+            foreach (var element in tobedeleted)
+            {
+                Console.WriteLine(element);
+            }
             DeleteFiles(GameDirectory.Text, tobedeleted);
             UninstallDxvkBtn.Visibility = Visibility.Collapsed;
             InstallDxvkBtn.Content = "Install DXVK";
