@@ -7,7 +7,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Management;
-using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -16,8 +15,6 @@ using System.Windows;
 using ByteSizeLib;
 using GTAIVSetupUtilityWPF.Common;
 using GTAIVSetupUtilityWPF.Functions;
-using ICSharpCode.SharpZipLib.GZip;
-using ICSharpCode.SharpZipLib.Tar;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using NLog;
 
@@ -61,11 +58,32 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             InitializeComponent();
             Logger.Info(" Main window initialized!");
             
-            bool isLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
-            
-            if (isLinux)
+            static bool IsLinux()
             {
-                Logger.Info(" Detected Linux operating system - DXVK functionality will be disabled.");
+                // Direct Linux detection
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    return true;
+    
+                // Wine detection
+                if (Environment.GetEnvironmentVariable("WINE_PREFIX") != null ||
+                    Environment.GetEnvironmentVariable("WINEPREFIX") != null)
+                    return true;
+    
+                // Check for Linux-specific filesystem structures
+                if (Directory.Exists("/proc") || Directory.Exists("/sys"))
+                    return true;
+    
+                // Check PATH separator (Linux uses ':' while Windows uses ';')
+                var path = Environment.GetEnvironmentVariable("PATH");
+                if (path != null && path.Contains(':') && !path.Contains(';'))
+                    return true;
+    
+                return false;
+            }
+            
+            if (IsLinux())
+            {
+                Logger.Info(" Detected Linux - DXVK functionality will be disabled.");
                 _installDxvk = 0;
                 
                 DxvkPanel.IsEnabled = false;
