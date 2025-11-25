@@ -1,9 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Formats.Tar;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Management;
 using System.Net;
@@ -705,14 +706,41 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             try
             {
                 Logger.Debug(" Downloading the .tar.gz...");
-                await Task.Run(async () =>
+                Logger.Debug(" Downloading the selected release...");
+        
+                using (var client = new HttpClient())
                 {
-                    Logger.Debug(" Downloading the selected release...");
-                    var client = new WebClient();
-                    client.DownloadProgressChanged += client_DownloadProgressChanged;
-                    client.DownloadFileCompleted += client_DownloadFileCompleted;
-                    client.DownloadFileAsync(new Uri(downloadUrl), "./dxvk.tar.gz");
-                });
+                    using (var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                    {
+                        response.EnsureSuccessStatusCode();
+                
+                        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                        await using (var contentStream = await response.Content.ReadAsStreamAsync())
+                        await using (var fileStream = new FileStream("./dxvk.tar.gz", FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                        {
+                            var buffer = new byte[8192];
+                            long totalBytesRead = 0L;
+                            int bytesRead;
+                    
+                            while ((bytesRead = await contentStream.ReadAsync(buffer)) != 0)
+                            {
+                                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+                                totalBytesRead += bytesRead;
+
+                                if (totalBytes <= 0) continue;
+                                var percentage = (double)totalBytesRead / totalBytes * 100;
+                                int percentageInt = Convert.ToInt16(percentage);
+                            
+                                await Dispatcher.InvokeAsync(() =>
+                                {
+                                    InstallDxvkBtn.Content = $"Downloading... ({percentageInt}%)";
+                                });
+                            }
+                        }
+                    }
+                }
+        
+                _downloadFinished = true;
             }
             catch (Exception ex)
             {
@@ -720,33 +748,20 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
                 throw;
             }
         }
-
-        void client_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            Dispatcher.BeginInvoke((Action)delegate
-            {
-                var bytesIn = double.Parse(e.BytesReceived.ToString());
-                var totalBytes = double.Parse(e.TotalBytesToReceive.ToString());
-                var percentage = bytesIn / totalBytes * 100;
-                int percentageInt = Convert.ToInt16(percentage);
-                InstallDxvkBtn.Content = $"Downloading... ({percentageInt}%)";
-            });
-        }
         private async Task ExtractDxvk(string installationDir, List<string> dxvkConf)
         {
-
             Logger.Debug(" Extracting the d3d9.dll from the archive...");
             await using (var fsIn = new FileStream("./dxvk.tar.gz", FileMode.Open))
-            await using (var gzipStream = new GZipInputStream(fsIn))
-            await using (var tarStream = new TarInputStream(gzipStream))
+            await using (var gzipStream = new GZipStream(fsIn, CompressionMode.Decompress))
             {
-                while (tarStream.GetNextEntry() is { } entry)
+                var tarReader = new TarReader(gzipStream);
+                while (await tarReader.GetNextEntryAsync() is { } entry)
                 {
                     Logger.Debug(entry.Name);
                     if (!entry.Name.EndsWith("x32/d3d9.dll")) continue;
-                    await using FileStream fsOut = File.Create(Path.Combine(installationDir, _ffixLatest ? "vulkan.dll" : "d3d9.dll"));
-                    tarStream.CopyEntryContents(fsOut);
-                    Logger.Debug(" Required dll extracted into the game folder.");
+                    await using var fsOut = File.Create(Path.Combine(installationDir, _ffixLatest ? "vulkan.dll" : "d3d9.dll"));
+                    await entry.DataStream!.CopyToAsync(fsOut);
+                    Logger.Debug(" d3d9.dll extracted into the game folder.");
                     break;
                 }
             }
@@ -765,6 +780,7 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             Logger.Debug(" dxvk.conf successfully written to game folder.");
             _extractFinished = true;
         }
+        
         private async Task DownloadDxvk(string link, List<string> dxvkConf, bool gitlab, bool alt, int release = 0)
         {
             var httpClient = new HttpClient();
@@ -840,7 +856,7 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
             switch (_installDxvk)
             {
                 case 1:
-                    /// we're using the "if" in each case because of the async checkbox
+                    // we're using the "if" in each case because of the async checkbox
                     if (AsyncCheckbox.IsChecked == true)
                     {
                         Logger.Info(" Installing Latest DXVK-Sarek-async...");
@@ -994,7 +1010,7 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
         private void SetupLaunchOptions_Click(object sender, RoutedEventArgs e)
         {
             Logger.Debug(" User clicked on Setup Launch Options, checking the toggles...");
-            var launchOptions = new List<string> { };
+            var launchOptions = new List<string>();
             if (NoRestrictionsCheckbox.IsChecked == true) { launchOptions.Add("-norestrictions"); Logger.Debug(" Added -norestrictions."); }
             if (NoMemRestrictCheckbox.IsChecked == true) { launchOptions.Add("-nomemrestrict"); Logger.Debug(" Added -nomemrestrict."); }
 
@@ -1043,7 +1059,7 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
 
                         break;
                     }
-                    case false when (borderlessWindowedValue == true || ffWindowed || ffBorderless || ffFocusLossless):
+                    case false when (borderlessWindowedValue || ffWindowed || ffBorderless || ffFocusLossless):
                     {
                         Logger.Debug(" User chose to disable Borderless Windowed but it's enabled in the ini, disabling it...");
                         if (_ffix)
@@ -1076,7 +1092,7 @@ namespace GTAIVSetupUtilityWPF.GTAIVSetupUtility
                             var obj = (ManagementObject)o;
                             var adapterRam = obj["AdapterRAM"] != null ? obj["AdapterRAM"].ToString() : "N/A";
                             if (adapterRam == "N/A") continue;
-                            var tempVram = System.Convert.ToInt16(ByteSize.FromBytes(System.Convert.ToDouble(adapterRam)).MebiBytes + 1);
+                            var tempVram = Convert.ToInt16(ByteSize.FromBytes(Convert.ToDouble(adapterRam)).MebiBytes + 1);
                             if (_firstGpu)
                             {
                                 Logger.Debug($"GPU0 has {tempVram}MB of VRAM");

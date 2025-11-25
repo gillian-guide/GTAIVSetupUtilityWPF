@@ -1,6 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using System.Windows;
+﻿using System.Runtime.InteropServices;
 
 namespace GTAIVSetupUtilityWPF.Common
 {

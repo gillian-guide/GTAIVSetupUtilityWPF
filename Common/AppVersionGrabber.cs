@@ -11,13 +11,13 @@ namespace GTAIVSetupUtilityWPF.Common
     
         public static string GetFileVersion(string filePath)
         {
-            const string DEFAULT_VERSION = "0.0.0.0";
+            const string defaultVersion = "0.0.0.0";
         
             return (File.Exists(filePath), GetVersionInfo(filePath)) switch
             {
-                (false, _) => DEFAULT_VERSION,
+                (false, _) => defaultVersion,
                 (true, { } version) when !string.IsNullOrEmpty(version) => version,
-                _ => DEFAULT_VERSION
+                _ => defaultVersion
             };
         }
     

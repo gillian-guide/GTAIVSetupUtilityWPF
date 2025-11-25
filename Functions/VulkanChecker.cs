@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Management;
-using System.Security.Policy;
 using System.Text.Json;
 using System.Windows;
 
@@ -48,9 +47,9 @@ namespace GTAIVSetupUtilityWPF.Functions
                 var videoControllers = searcher.Get();
                 gpuCount = videoControllers.Count;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Logger.Error($" Ran into error: ", ex);
+                Logger.Error($" Ran into error ");
                 throw;
             }
             for (int i = 0; i < gpuCount; i++)
