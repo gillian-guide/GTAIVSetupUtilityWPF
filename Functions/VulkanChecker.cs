@@ -179,7 +179,7 @@ namespace GTAIVSetupUtilityWPF.Functions
                         Logger.Info($" {deviceName}'s supported Vulkan version is: {vulkanVerMajor}.{vulkanVerMinor}");
                         Logger.Debug($" Checking if GPU{x} supports DXVK 2.x...");
                         if (CheckIfExtensionExists(extensions, "VK_EXT_robustness2")
-                            && CheckIfExtensionExists(extensions,"VK_EXT_transform_feedback")
+                            && CheckIfExtensionExists(extensions, "VK_EXT_transform_feedback")
                             && features.TryGetProperty("VkPhysicalDeviceRobustness2FeaturesEXT", out var robustnessFeatures)
                             && robustnessFeatures.TryGetProperty("robustBufferAccess2", out var robustBufferAccess)
                             && robustBufferAccess.GetBoolean()
@@ -192,18 +192,27 @@ namespace GTAIVSetupUtilityWPF.Functions
                         }
                         else
                         {
-                            Logger.Debug($" GPU{x} doesn't support DXVK 2.x, checking other versions...");
-                            switch (vulkanVerMajor)
+                            Logger.Debug($" GPU{x} doesn't support DXVK 2.x via feature check, checking versions...");
+                            if (vulkanVerMajor > 1 || (vulkanVerMajor == 1 && vulkanVerMinor >= 3))
                             {
-                                case 1 when vulkanVerMinor <= 1:
-                                    atLeastOneGpuSucceededJson = true;
-                                    Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
-                                    break;
-                                case 1 when vulkanVerMinor < 3:
-                                    atLeastOneGpuSucceededJson = true;
-                                    Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
-                                    dxvkSupport = 1;
-                                    break;
+                                atLeastOneGpuSucceededJson = true;
+                                Logger.Info($" GPU{x} supports Vulkan {vulkanVerMajor}.{vulkanVerMinor}. Native DXVK 2.x support confirmed via version check.");
+                                dxvkSupport = 3;
+                            }
+                            else
+                            {
+                                switch (vulkanVerMajor)
+                                {
+                                    case 1 when vulkanVerMinor <= 1:
+                                        atLeastOneGpuSucceededJson = true;
+                                        Logger.Info($" GPU{x} doesn't support DXVK or has outdated drivers.");
+                                        break;
+                                    case 1 when vulkanVerMinor < 3:
+                                        atLeastOneGpuSucceededJson = true;
+                                        Logger.Info($" GPU{x} supports Legacy DXVK 1.x.");
+                                        dxvkSupport = 1;
+                                        break;
+                                }
                             }
                         }
 
